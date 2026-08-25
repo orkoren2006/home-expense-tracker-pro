@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Filter, Edit2, Trash2, Download, CheckSquare, Square, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, Download, CheckSquare, Square, X, ArrowUpDown, ArrowUp, ArrowDown, Plus } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -45,6 +45,23 @@ export default function Expenses() {
   // Sorting
   const [sortField, setSortField] = useState<'name' | 'amount' | 'date' | 'category'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Add expense form
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newExpenseName, setNewExpenseName] = useState('');
+  const [newExpenseAmount, setNewExpenseAmount] = useState('');
+  const [newExpenseDate, setNewExpenseDate] = useState(() => new Date().toISOString().split('T')[0]);
+  const [newExpenseBillingMonth, setNewExpenseBillingMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
+  const [newExpenseCategoryId, setNewExpenseCategoryId] = useState('');
+  const [newExpenseFrequency, setNewExpenseFrequency] = useState<Frequency>('one_time');
+  const [newExpenseAmountType, setNewExpenseAmountType] = useState<AmountType>('variable');
+  const [newExpenseExpenseType, setNewExpenseExpenseType] = useState<ExpenseType>('optional');
+  const [newExpensePaymentMethod, setNewExpensePaymentMethod] = useState<PaymentMethod>('credit');
+  const [newExpenseCreditCardId, setNewExpenseCreditCardId] = useState('');
+  const [newExpenseNotes, setNewExpenseNotes] = useState('');
 
   // Build label maps including custom options
   const frequencyLabels = useMemo(() => {
@@ -176,6 +193,49 @@ export default function Expenses() {
     setFilterPaymentMethod('');
     setFilterCreditCard('');
     setSearchTerm('');
+  };
+
+  const resetAddForm = () => {
+    setNewExpenseName('');
+    setNewExpenseAmount('');
+    setNewExpenseDate(new Date().toISOString().split('T')[0]);
+    const now = new Date();
+    setNewExpenseBillingMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
+    setNewExpenseCategoryId('');
+    setNewExpenseFrequency('one_time');
+    setNewExpenseAmountType('variable');
+    setNewExpenseExpenseType('optional');
+    setNewExpensePaymentMethod('credit');
+    setNewExpenseCreditCardId('');
+    setNewExpenseNotes('');
+  };
+
+  const handleAddExpense = async () => {
+    if (!supabase || !household || !newExpenseName.trim() || !newExpenseAmount) return;
+
+    const amount = parseFloat(newExpenseAmount);
+    if (isNaN(amount)) return;
+
+    const { error } = await supabase.from('expenses').insert({
+      household_id: household.id,
+      name: newExpenseName.trim(),
+      amount: amount,
+      date: newExpenseDate,
+      billing_month: newExpenseBillingMonth,
+      category_id: newExpenseCategoryId || null,
+      frequency: newExpenseFrequency,
+      amount_type: newExpenseAmountType,
+      expense_type: newExpenseExpenseType,
+      payment_method: newExpensePaymentMethod,
+      credit_card_id: newExpenseCreditCardId || null,
+      notes: newExpenseNotes.trim() || null
+    });
+
+    if (!error) {
+      resetAddForm();
+      setShowAddForm(false);
+      await loadExpenses();
+    }
   };
 
   const handleDelete = async (id: string) => {
@@ -356,11 +416,107 @@ export default function Expenses() {
               סה"כ: ₪{totalAmount.toLocaleString()} ({filteredExpenses.length} הוצאות)
             </p>
           </div>
-          <Button variant="outline" onClick={handleExport}>
-            <Download className="w-4 h-4" />
-            ייצוא
-          </Button>
+          <div data-ev-id="ev_b448e6fe22" className="flex gap-2">
+            <Button onClick={() => setShowAddForm(true)}>
+              <Plus className="w-4 h-4" />
+              הוצאה חדשה
+            </Button>
+            <Button variant="outline" onClick={handleExport}>
+              <Download className="w-4 h-4" />
+              ייצוא
+            </Button>
+          </div>
         </div>
+
+        {/* Add expense form */}
+        {showAddForm &&
+        <Card>
+            <div data-ev-id="ev_b833a81060" className="flex items-center justify-between mb-4">
+              <h3 data-ev-id="ev_bc6a7d56ef" className="text-lg font-semibold text-foreground">הוספת הוצאה חדשה</h3>
+              <button data-ev-id="ev_ff73d7eeea" onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div data-ev-id="ev_b4a4bae247" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <Input
+              label="שם ההוצאה *"
+              placeholder="לדוגמה: סופר"
+              value={newExpenseName}
+              onChange={(e) => setNewExpenseName(e.target.value)} />
+              <Input
+              label="סכום * (מינוס = זיכוי)"
+              type="number"
+              step="0.01"
+              placeholder="100.00"
+              value={newExpenseAmount}
+              onChange={(e) => setNewExpenseAmount(e.target.value)} />
+              <Input
+              label="תאריך"
+              type="date"
+              value={newExpenseDate}
+              onChange={(e) => setNewExpenseDate(e.target.value)} />
+              <Select
+              label="חודש חיוב *"
+              value={newExpenseBillingMonth}
+              onChange={(e) => setNewExpenseBillingMonth(e.target.value)}
+              options={monthOptions} />
+              <Select
+              label="קטגוריה"
+              value={newExpenseCategoryId}
+              onChange={(e) => setNewExpenseCategoryId(e.target.value)}
+              options={[
+              { value: '', label: 'בחר קטגוריה...' },
+              ...expenseCategories.map((c) => ({ value: c.id, label: c.name }))]
+              } />
+              <Select
+              label="תדירות"
+              value={newExpenseFrequency}
+              onChange={(e) => setNewExpenseFrequency(e.target.value as Frequency)}
+              options={Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))} />
+              <Select
+              label="סוג סכום"
+              value={newExpenseAmountType}
+              onChange={(e) => setNewExpenseAmountType(e.target.value as AmountType)}
+              options={Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))} />
+              <Select
+              label="סוג הוצאה"
+              value={newExpenseExpenseType}
+              onChange={(e) => setNewExpenseExpenseType(e.target.value as ExpenseType)}
+              options={Object.entries(expenseTypeLabels).map(([value, label]) => ({ value, label }))} />
+              <Select
+              label="אמצעי תשלום"
+              value={newExpensePaymentMethod}
+              onChange={(e) => setNewExpensePaymentMethod(e.target.value as PaymentMethod)}
+              options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
+              {newExpensePaymentMethod === 'credit' && creditCards.length > 0 &&
+            <Select
+              label="כרטיס אשראי"
+              value={newExpenseCreditCardId}
+              onChange={(e) => setNewExpenseCreditCardId(e.target.value)}
+              options={[
+              { value: '', label: 'בחר כרטיס...' },
+              ...creditCards.map((c) => ({
+                value: c.id,
+                label: c.name + (c.last_four_digits ? ` (${c.last_four_digits})` : '')
+              }))]
+              } />
+            }
+              <Input
+              label="הערות"
+              placeholder="הערה או תיאור קצר"
+              value={newExpenseNotes}
+              onChange={(e) => setNewExpenseNotes(e.target.value)} />
+            </div>
+            <div data-ev-id="ev_87516ddcb6" className="flex gap-3 mt-4">
+              <Button onClick={handleAddExpense} disabled={!newExpenseName.trim() || !newExpenseAmount}>
+                שמור הוצאה
+              </Button>
+              <Button variant="outline" onClick={() => {resetAddForm();setShowAddForm(false);}}>
+                ביטול
+              </Button>
+            </div>
+          </Card>
+        }
 
         {/* Search and filters */}
         <Card className="p-4">
@@ -614,8 +770,8 @@ export default function Expenses() {
                             {new Date(expense.date).toLocaleDateString('he-IL')}
                           </p>
                         </td>
-                        <td data-ev-id="ev_c6da8ba04b" className="p-3 font-semibold text-foreground">
-                          ₪{Number(expense.amount).toLocaleString()}
+                        <td data-ev-id="ev_c6da8ba04b" className={`p-3 font-semibold ${Number(expense.amount) < 0 ? 'text-green-600' : 'text-foreground'}`}>
+                          {Number(expense.amount) < 0 ? 'זיכוי ' : ''}₪{Math.abs(Number(expense.amount)).toLocaleString()}
                         </td>
                         <td data-ev-id="ev_14fd00d11f" className="p-3 text-muted-foreground hidden md:table-cell">
                           {new Date(expense.date).toLocaleDateString('he-IL')}

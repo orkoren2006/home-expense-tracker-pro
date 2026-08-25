@@ -43,9 +43,9 @@ function parseDate(value: unknown): string {
   return new Date().toISOString().split('T')[0];
 }
 
-// Parse amount from various formats
+// Parse amount from various formats - preserves negative for credits
 function parseAmount(value: unknown): number {
-  if (typeof value === 'number') return Math.abs(value);
+  if (typeof value === 'number') return value;
   
   const str = String(value ?? '0')
     .replace(/[₪$€,]/g, '')
@@ -53,7 +53,7 @@ function parseAmount(value: unknown): number {
     .trim();
   
   const num = parseFloat(str);
-  return isNaN(num) ? 0 : Math.abs(num);
+  return isNaN(num) ? 0 : num;
 }
 
 // Detect Isracard format
