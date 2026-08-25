@@ -17,7 +17,7 @@ import {
 '@/types';
 
 export default function Expenses() {
-  const { household, categories, creditCards, classificationOptions, refreshData } = useHousehold();
+  const { household, categories, creditCards, classificationOptions, expenseRules, refreshData } = useHousehold();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +46,8 @@ export default function Expenses() {
   const [sortField, setSortField] = useState<'name' | 'amount' | 'date' | 'category'>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
 
-  // Add expense form
+  // Add expense form - two step flow
+  const [addStep, setAddStep] = useState<'name' | 'details'>('name');
   const [showAddForm, setShowAddForm] = useState(false);
   const [newExpenseName, setNewExpenseName] = useState('');
   const [newExpenseAmount, setNewExpenseAmount] = useState('');
@@ -196,6 +197,7 @@ export default function Expenses() {
   };
 
   const resetAddForm = () => {
+    setAddStep('name');
     setNewExpenseName('');
     setNewExpenseAmount('');
     setNewExpenseDate(new Date().toISOString().split('T')[0]);
@@ -208,6 +210,27 @@ export default function Expenses() {
     setNewExpensePaymentMethod('credit');
     setNewExpenseCreditCardId('');
     setNewExpenseNotes('');
+  };
+
+  const proceedToDetails = () => {
+    if (!newExpenseName.trim()) return;
+
+    // Check if there's a matching rule
+    const matchingRule = expenseRules.find(
+      (rule) => rule.expense_name.toLowerCase() === newExpenseName.trim().toLowerCase()
+    );
+
+    if (matchingRule) {
+      // Pre-fill from rule
+      setNewExpenseCategoryId(matchingRule.category_id || '');
+      setNewExpenseFrequency(matchingRule.frequency);
+      setNewExpenseAmountType(matchingRule.amount_type);
+      setNewExpenseExpenseType(matchingRule.expense_type);
+      setNewExpensePaymentMethod(matchingRule.payment_method);
+      setNewExpenseNotes(matchingRule.notes || '');
+    }
+
+    setAddStep('details');
   };
 
   const handleAddExpense = async () => {
@@ -428,21 +451,55 @@ export default function Expenses() {
           </div>
         </div>
 
-        {/* Add expense form */}
-        {showAddForm &&
+        {/* Add expense form - Step 1: Name */}
+        {showAddForm && addStep === 'name' &&
         <Card>
-            <div data-ev-id="ev_b833a81060" className="flex items-center justify-between mb-4">
-              <h3 data-ev-id="ev_bc6a7d56ef" className="text-lg font-semibold text-foreground">הוספת הוצאה חדשה</h3>
-              <button data-ev-id="ev_ff73d7eeea" onClick={() => setShowAddForm(false)} className="p-1 hover:bg-muted rounded-lg">
+            <div data-ev-id="ev_0cdc3dfb17" className="flex items-center justify-between mb-4">
+              <h3 data-ev-id="ev_1eeaa76034" className="text-lg font-semibold text-foreground">הוספת הוצאה חדשה</h3>
+              <button data-ev-id="ev_b2f245145b" onClick={() => {resetAddForm();setShowAddForm(false);}} className="p-1 hover:bg-muted rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <div data-ev-id="ev_b4a4bae247" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <p data-ev-id="ev_d608798735" className="text-muted-foreground mb-4">
+              הזן את שם ההוצאה. אם קיים כלל מתאים, הסיווגים יוזנו אוטומטית.
+            </p>
+            <div data-ev-id="ev_f7cd864579" className="max-w-md">
               <Input
               label="שם ההוצאה *"
-              placeholder="לדוגמה: סופר"
+              placeholder="לדוגמה: סופר, חשמל, ביטוח..."
               value={newExpenseName}
-              onChange={(e) => setNewExpenseName(e.target.value)} />
+              onChange={(e) => setNewExpenseName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && proceedToDetails()} />
+            </div>
+            <div data-ev-id="ev_4b98fe4085" className="flex gap-3 mt-4">
+              <Button onClick={proceedToDetails} disabled={!newExpenseName.trim()}>
+                המשך
+              </Button>
+              <Button variant="outline" onClick={() => {resetAddForm();setShowAddForm(false);}}>
+                ביטול
+              </Button>
+            </div>
+          </Card>
+        }
+
+        {/* Add expense form - Step 2: Details */}
+        {showAddForm && addStep === 'details' &&
+        <Card>
+            <div data-ev-id="ev_fe0ab94ba5" className="flex items-center justify-between mb-4">
+              <div data-ev-id="ev_4889dd11c8">
+                <h3 data-ev-id="ev_6195c3c0f1" className="text-lg font-semibold text-foreground">פרטי ההוצאה</h3>
+                <p data-ev-id="ev_cf2ac777b6" className="text-muted-foreground text-sm">{newExpenseName}</p>
+              </div>
+              <button data-ev-id="ev_47716927d0" onClick={() => {resetAddForm();setShowAddForm(false);}} className="p-1 hover:bg-muted rounded-lg">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            {expenseRules.find((r) => r.expense_name.toLowerCase() === newExpenseName.trim().toLowerCase()) &&
+          <div data-ev-id="ev_1d636e51a1" className="bg-green-500/10 text-green-700 dark:text-green-400 rounded-lg p-3 mb-4 text-sm">
+                ✓ נמצא כלל מתאים - הסיווגים הוזנו אוטומטית
+              </div>
+          }
+            <div data-ev-id="ev_f9121ab88b" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               <Input
               label="סכום * (מינוס = זיכוי)"
               type="number"
@@ -507,9 +564,12 @@ export default function Expenses() {
               value={newExpenseNotes}
               onChange={(e) => setNewExpenseNotes(e.target.value)} />
             </div>
-            <div data-ev-id="ev_87516ddcb6" className="flex gap-3 mt-4">
-              <Button onClick={handleAddExpense} disabled={!newExpenseName.trim() || !newExpenseAmount}>
+            <div data-ev-id="ev_b867237c23" className="flex gap-3 mt-4">
+              <Button onClick={handleAddExpense} disabled={!newExpenseAmount}>
                 שמור הוצאה
+              </Button>
+              <Button variant="outline" onClick={() => setAddStep('name')}>
+                חזור
               </Button>
               <Button variant="outline" onClick={() => {resetAddForm();setShowAddForm(false);}}>
                 ביטול
