@@ -215,10 +215,15 @@ export default function Expenses() {
   const proceedToDetails = () => {
     if (!newExpenseName.trim()) return;
 
+    console.log('Looking for rule match:', newExpenseName.trim().toLowerCase());
+    console.log('Available rules:', expenseRules.map(r => r.expense_name));
+
     // Check if there's a matching rule
     const matchingRule = expenseRules.find(
       (rule) => rule.expense_name.toLowerCase() === newExpenseName.trim().toLowerCase()
     );
+
+    console.log('Matching rule found:', matchingRule);
 
     if (matchingRule) {
       // Pre-fill from rule
