@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.15"
+    PostgrestVersion: "14.17"
   }
   public: {
     Tables: {
@@ -371,6 +371,103 @@ export type Database = {
           name?: string
         }
         Relationships: []
+      }
+      income_rules: {
+        Row: {
+          amount_type: string
+          frequency: string
+          household_id: string
+          id: string
+          income_name: string
+          notes: string | null
+          payment_method: string
+          source: string
+        }
+        Insert: {
+          amount_type?: string
+          frequency?: string
+          household_id: string
+          id?: string
+          income_name: string
+          notes?: string | null
+          payment_method?: string
+          source?: string
+        }
+        Update: {
+          amount_type?: string
+          frequency?: string
+          household_id?: string
+          id?: string
+          income_name?: string
+          notes?: string | null
+          payment_method?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "income_rules_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      incomes: {
+        Row: {
+          amount: number
+          amount_type: string
+          billing_month: string | null
+          created_at: string
+          date: string
+          frequency: string
+          household_id: string
+          id: string
+          import_batch_id: string | null
+          name: string
+          notes: string | null
+          payment_method: string
+          source: string
+        }
+        Insert: {
+          amount: number
+          amount_type?: string
+          billing_month?: string | null
+          created_at?: string
+          date?: string
+          frequency?: string
+          household_id: string
+          id?: string
+          import_batch_id?: string | null
+          name: string
+          notes?: string | null
+          payment_method?: string
+          source?: string
+        }
+        Update: {
+          amount?: number
+          amount_type?: string
+          billing_month?: string | null
+          created_at?: string
+          date?: string
+          frequency?: string
+          household_id?: string
+          id?: string
+          import_batch_id?: string | null
+          name?: string
+          notes?: string | null
+          payment_method?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "incomes_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {

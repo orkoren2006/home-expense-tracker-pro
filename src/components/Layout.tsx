@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Home, Upload, Settings, List, LogOut, FileText } from 'lucide-react';
+import { Home, Upload, Settings, List, LogOut, FileText, Wallet } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useHousehold } from '@/hooks/useHousehold';
 
@@ -17,6 +17,7 @@ export function Layout({ children }: LayoutProps) {
   { path: '/', icon: Home, label: 'בית' },
   { path: '/import', icon: Upload, label: 'ייבוא' },
   { path: '/expenses', icon: List, label: 'הוצאות' },
+  { path: '/incomes', icon: Wallet, label: 'הכנסות' },
   { path: '/rules', icon: FileText, label: 'כללים' },
   { path: '/settings', icon: Settings, label: 'הגדרות' }];
 
@@ -51,14 +52,14 @@ export function Layout({ children }: LayoutProps) {
       <nav data-ev-id="ev_1654e16349" className="fixed bottom-0 left-0 right-0 bg-card border-t border-border md:hidden">
         <div data-ev-id="ev_f289ed2217" className="flex justify-around py-2">
           {navItems.map(({ path, icon: Icon, label }) =>
-          <Link
-            key={path}
-            to={path}
-            className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
-            location.pathname === path ?
-            'text-primary' :
-            'text-muted-foreground hover:text-foreground'}`
-            }>
+          <Link data-ev-id="ev_6f7dac975b"
+          key={path}
+          to={path}
+          className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+          location.pathname === path ?
+          'text-primary' :
+          'text-muted-foreground hover:text-foreground'}`
+          }>
 
               <Icon className="w-5 h-5" />
               <span data-ev-id="ev_c41b0d432a" className="text-xs">{label}</span>
@@ -70,14 +71,14 @@ export function Layout({ children }: LayoutProps) {
       {/* Desktop sidebar */}
       <nav data-ev-id="ev_ca298844ea" className="hidden md:flex fixed right-4 top-20 flex-col gap-2 bg-card p-3 rounded-xl border border-border shadow-sm">
         {navItems.map(({ path, icon: Icon, label }) =>
-        <Link
-          key={path}
-          to={path}
-          className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
-          location.pathname === path ?
-          'bg-primary text-primary-foreground' :
-          'text-muted-foreground hover:bg-muted hover:text-foreground'}`
-          }>
+        <Link data-ev-id="ev_35b4c13b93"
+        key={path}
+        to={path}
+        className={`flex items-center gap-3 px-4 py-2.5 rounded-lg transition-colors ${
+        location.pathname === path ?
+        'bg-primary text-primary-foreground' :
+        'text-muted-foreground hover:bg-muted hover:text-foreground'}`
+        }>
 
             <Icon className="w-5 h-5" />
             <span data-ev-id="ev_176eae31a1">{label}</span>

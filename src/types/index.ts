@@ -123,3 +123,52 @@ export const PAYMENT_METHOD_LABELS: Record<PaymentMethod, string> = {
   transfer: 'העברה בנקאית',
   check: 'צ\'ק',
 };
+
+// Income types
+export type IncomePaymentMethod = 'salary' | 'transfer' | 'bit' | 'paybox' | 'check' | 'cash';
+export type IncomeSource = 'work' | 'family_help' | 'loan' | 'savings' | 'rental' | 'investment' | 'other';
+
+export interface Income {
+  id: string;
+  household_id: string;
+  name: string;
+  amount: number;
+  date: string;
+  billing_month?: string;
+  frequency: Frequency;
+  amount_type: AmountType;
+  payment_method: IncomePaymentMethod;
+  source: IncomeSource;
+  notes?: string;
+  import_batch_id?: string;
+}
+
+export interface IncomeRule {
+  id: string;
+  household_id: string;
+  income_name: string;
+  frequency: Frequency;
+  amount_type: AmountType;
+  payment_method: IncomePaymentMethod;
+  source: IncomeSource;
+  notes?: string;
+}
+
+export const INCOME_PAYMENT_METHOD_LABELS: Record<IncomePaymentMethod, string> = {
+  salary: 'משכורת',
+  transfer: 'העברה בנקאית',
+  bit: 'ביט',
+  paybox: 'פייבוקס',
+  check: 'צ\'ק',
+  cash: 'מזומן',
+};
+
+export const INCOME_SOURCE_LABELS: Record<IncomeSource, string> = {
+  work: 'עבודה',
+  family_help: 'עזרה מבן משפחה',
+  loan: 'הלוואה',
+  savings: 'משיכה מחסכון',
+  rental: 'שכירות',
+  investment: 'השקעות',
+  other: 'אחר',
+};

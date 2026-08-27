@@ -1,15 +1,16 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router';
-import { Upload, Settings, List, TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft } from 'lucide-react';
+import { Upload, Settings, List, TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft, Wallet, Scale } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
-import type { Expense } from '@/types';
+import type { Expense, Income } from '@/types';
 
 export default function Home() {
   const { household, categories, expenseRules } = useHousehold();
   const [monthlyExpenses, setMonthlyExpenses] = useState<Expense[]>([]);
+  const [monthlyIncomes, setMonthlyIncomes] = useState<Income[]>([]);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
   const [loading, setLoading] = useState(true);
 
@@ -28,14 +29,16 @@ export default function Home() {
       const billingMonth = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
       console.log('Home filter by billing_month:', billingMonth);
 
-      const { data } = await supabase.
-      from('expenses').
-      select('*').
-      eq('household_id', household.id).
-      eq('billing_month', billingMonth);
+      // Load expenses and incomes in parallel
+      const [expensesRes, incomesRes] = await Promise.all([
+      supabase.from('expenses').select('*').eq('household_id', household.id).eq('billing_month', billingMonth),
+      supabase.from('incomes').select('*').eq('household_id', household.id).eq('billing_month', billingMonth)]
+      );
 
-      const expenses = (data ?? []) as Expense[];
+      const expenses = (expensesRes.data ?? []) as Expense[];
+      const incomes = (incomesRes.data ?? []) as Income[];
       setMonthlyExpenses(expenses);
+      setMonthlyIncomes(incomes);
 
       // Count unclassified (no category)
       const unclassified = expenses.filter((e) => !e.category_id).length;
@@ -55,6 +58,8 @@ export default function Home() {
   };
 
   const totalExpenses = monthlyExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const totalIncomes = monthlyIncomes.reduce((sum, e) => sum + Number(e.amount), 0);
+  const balance = totalIncomes - totalExpenses;
   const mandatoryExpenses = monthlyExpenses.
   filter((e) => e.expense_type === 'mandatory').
   reduce((sum, e) => sum + Number(e.amount), 0);
@@ -92,43 +97,45 @@ export default function Home() {
         </div>
 
         {/* Stats cards */}
-        <div data-ev-id="ev_4589b0a0c7" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div data-ev-id="ev_abc6c2cd38" className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <Card className="flex flex-col gap-2">
-            <div data-ev-id="ev_40e79dfd25" className="flex items-center gap-2 text-muted-foreground">
-              <TrendingDown className="w-4 h-4" />
-              <span data-ev-id="ev_8390c70a22" className="text-sm">סה״כ הוצאות</span>
+            <div data-ev-id="ev_5ff190e8a6" className="flex items-center gap-2 text-muted-foreground">
+              <TrendingUp className="w-4 h-4 text-green-500" />
+              <span data-ev-id="ev_809f7b1968" className="text-sm">סה"כ הכנסות</span>
             </div>
-            <p data-ev-id="ev_68d40a8c2f" className="text-2xl font-bold text-foreground">
+            <p data-ev-id="ev_fe587fd393" className="text-2xl font-bold text-green-600">
+              {loading ? '...' : `₪${totalIncomes.toLocaleString()}`}
+            </p>
+          </Card>
+
+          <Card className="flex flex-col gap-2">
+            <div data-ev-id="ev_b7ed4c883b" className="flex items-center gap-2 text-muted-foreground">
+              <TrendingDown className="w-4 h-4 text-red-500" />
+              <span data-ev-id="ev_c23c907471" className="text-sm">סה"כ הוצאות</span>
+            </div>
+            <p data-ev-id="ev_a1160dd3a2" className="text-2xl font-bold text-red-600">
               {loading ? '...' : `₪${totalExpenses.toLocaleString()}`}
             </p>
           </Card>
 
           <Card className="flex flex-col gap-2">
-            <div data-ev-id="ev_d16bb28ddd" className="flex items-center gap-2 text-muted-foreground">
-              <CreditCard className="w-4 h-4" />
-              <span data-ev-id="ev_866fd1f65e" className="text-sm">הוצאות חובה</span>
+            <div data-ev-id="ev_963282d526" className="flex items-center gap-2 text-muted-foreground">
+              <Scale className="w-4 h-4" />
+              <span data-ev-id="ev_b9f6855ea7" className="text-sm">מאזן</span>
             </div>
-            <p data-ev-id="ev_90f9271b7e" className="text-2xl font-bold text-foreground">
+            <p data-ev-id="ev_9cc4409903" className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {loading ? '...' : `${balance >= 0 ? '+' : ''}₪${balance.toLocaleString()}`}
+            </p>
+          </Card>
+
+          <Card className="flex flex-col gap-2">
+            <div data-ev-id="ev_f477cbfd7d" className="flex items-center gap-2 text-muted-foreground">
+              <CreditCard className="w-4 h-4" />
+              <span data-ev-id="ev_0468eb9f5c" className="text-sm">הוצאות חובה</span>
+            </div>
+            <p data-ev-id="ev_18a8935863" className="text-2xl font-bold text-foreground">
               {loading ? '...' : `₪${mandatoryExpenses.toLocaleString()}`}
             </p>
-          </Card>
-
-          <Card className="flex flex-col gap-2">
-            <div data-ev-id="ev_e3ff621686" className="flex items-center gap-2 text-muted-foreground">
-              <TrendingUp className="w-4 h-4" />
-              <span data-ev-id="ev_a1b6c54a57" className="text-sm">קטגוריות</span>
-            </div>
-            <p data-ev-id="ev_e9e6629ec6" className="text-2xl font-bold text-foreground">
-              {categories.filter((c) => c.type === 'expense').length}
-            </p>
-          </Card>
-
-          <Card className="flex flex-col gap-2">
-            <div data-ev-id="ev_63971ade95" className="flex items-center gap-2 text-muted-foreground">
-              <List className="w-4 h-4" />
-              <span data-ev-id="ev_e46d3316e6" className="text-sm">כללי סיווג</span>
-            </div>
-            <p data-ev-id="ev_5c711e6bbb" className="text-2xl font-bold text-foreground">{expenseRules.length}</p>
           </Card>
         </div>
 
@@ -141,7 +148,7 @@ export default function Home() {
                 <p data-ev-id="ev_d6648ce231" className="font-medium text-amber-800">
                   יש {unclassifiedCount} הוצאות ללא קטגוריה
                 </p>
-                <Link to="/expenses" className="text-sm text-amber-700 hover:underline">
+                <Link data-ev-id="ev_629605c5e4" to="/expenses" className="text-sm text-amber-700 hover:underline">
                   לחץ לסיווג ←
                 </Link>
               </div>
@@ -153,9 +160,9 @@ export default function Home() {
         <div data-ev-id="ev_b379b5ccf4">
           <h3 data-ev-id="ev_b034e115a6" className="text-lg font-semibold text-foreground mb-4">פעולות מהירות</h3>
           <div data-ev-id="ev_5d788f3684" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link
-              to="/import"
-              className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
+            <Link data-ev-id="ev_2f59273a4b"
+            to="/import"
+            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
 
               <div data-ev-id="ev_c48213d0a5" className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
                 <Upload className="w-6 h-6 text-primary" />
@@ -166,9 +173,9 @@ export default function Home() {
               </div>
             </Link>
 
-            <Link
-              to="/expenses"
-              className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
+            <Link data-ev-id="ev_2f09eabe72"
+            to="/expenses"
+            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
 
               <div data-ev-id="ev_87174a79ef" className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center">
                 <List className="w-6 h-6 text-secondary-foreground" />
@@ -179,9 +186,9 @@ export default function Home() {
               </div>
             </Link>
 
-            <Link
-              to="/settings"
-              className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
+            <Link data-ev-id="ev_df72d81125"
+            to="/settings"
+            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
 
               <div data-ev-id="ev_6e62ff4b81" className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
                 <Settings className="w-6 h-6 text-muted-foreground" />

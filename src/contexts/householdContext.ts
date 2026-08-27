@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import type { Household, HouseholdMember, Category, CreditCard, ExpenseRule, DefaultExpenseSettings, ClassificationOption } from '@/types';
+import type { Household, HouseholdMember, Category, CreditCard, ExpenseRule, IncomeRule, DefaultExpenseSettings, ClassificationOption } from '@/types';
 
 export interface HouseholdContextType {
   household: Household | null;
@@ -7,6 +7,7 @@ export interface HouseholdContextType {
   categories: Category[];
   creditCards: CreditCard[];
   expenseRules: ExpenseRule[];
+  incomeRules: IncomeRule[];
   defaultSettings: DefaultExpenseSettings | null;
   classificationOptions: ClassificationOption[];
   loading: boolean;
