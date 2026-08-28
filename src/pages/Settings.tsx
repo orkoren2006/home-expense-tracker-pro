@@ -13,7 +13,9 @@ import {
   FREQUENCY_LABELS,
   AMOUNT_TYPE_LABELS,
   EXPENSE_TYPE_LABELS,
-  PAYMENT_METHOD_LABELS } from
+  PAYMENT_METHOD_LABELS,
+  INCOME_SOURCE_LABELS,
+  INCOME_PAYMENT_METHOD_LABELS } from
 '@/types';
 
 type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import';
@@ -234,10 +236,10 @@ export default function Settings() {
       // Add custom classification options to reverse maps
       for (const opt of classificationOptions) {
         const map =
-          opt.option_type === 'frequency' ? frequencyReverseMap :
-          opt.option_type === 'amount_type' ? amountTypeReverseMap :
-          opt.option_type === 'expense_type' ? expenseTypeReverseMap :
-          paymentMethodReverseMap;
+        opt.option_type === 'frequency' ? frequencyReverseMap :
+        opt.option_type === 'amount_type' ? amountTypeReverseMap :
+        opt.option_type === 'expense_type' ? expenseTypeReverseMap :
+        paymentMethodReverseMap;
         map.set(opt.label.toLowerCase(), opt.value);
       }
 
@@ -246,7 +248,7 @@ export default function Settings() {
 
       // Collect items that need to be created
       const newCategories = new Set<string>();
-      const newClassifications: Array<{ type: string; label: string }> = [];
+      const newClassifications: Array<{type: string;label: string;}> = [];
 
       for (const rule of rules) {
         // Check categories
@@ -280,13 +282,13 @@ export default function Settings() {
         const categoriesToInsert = Array.from(newCategories).map((name) => ({
           household_id: household.id,
           name,
-          type: 'expense' as const,
+          type: 'expense' as const
         }));
 
-        const { data: createdCats, error: catError } = await supabase
-          .from('categories')
-          .insert(categoriesToInsert)
-          .select();
+        const { data: createdCats, error: catError } = await supabase.
+        from('categories').
+        insert(categoriesToInsert).
+        select();
 
         if (catError) {
           console.error('Error creating categories:', catError);
@@ -306,12 +308,12 @@ export default function Settings() {
           household_id: household.id,
           option_type: c.type,
           value: c.label.toLowerCase().replace(/\s+/g, '_'),
-          label: c.label,
+          label: c.label
         }));
 
-        const { error: classError } = await supabase
-          .from('classification_options')
-          .insert(classToInsert);
+        const { error: classError } = await supabase.
+        from('classification_options').
+        insert(classToInsert);
 
         if (classError) {
           console.error('Error creating classification options:', classError);
@@ -334,17 +336,17 @@ export default function Settings() {
       const toInsert = rules.map((rule) => ({
         household_id: household.id,
         expense_name: rule.expense_name,
-        category_id: rule.category_name
-          ? categoryMap.get(rule.category_name.toLowerCase()) || null
-          : null,
+        category_id: rule.category_name ?
+        categoryMap.get(rule.category_name.toLowerCase()) || null :
+        null,
         frequency: resolveValue(rule.frequency, frequencyReverseMap, 'one_time'),
         amount_type: resolveValue(rule.amount_type, amountTypeReverseMap, 'variable'),
         expense_type: resolveValue(rule.expense_type, expenseTypeReverseMap, 'optional'),
-        payment_method: resolveValue(rule.payment_method, paymentMethodReverseMap, 'credit'),
+        payment_method: resolveValue(rule.payment_method, paymentMethodReverseMap, 'credit')
       }));
 
       const { error: upsertError } = await supabase.from('expense_rules').upsert(toInsert, {
-        onConflict: 'household_id,expense_name',
+        onConflict: 'household_id,expense_name'
       });
 
       if (upsertError) {
@@ -485,7 +487,9 @@ export default function Settings() {
                 { value: 'frequency', label: 'תדירות' },
                 { value: 'amount_type', label: 'סוג סכום' },
                 { value: 'expense_type', label: 'סוג הוצאה' },
-                { value: 'payment_method', label: 'אמצעי תשלום' }]
+                { value: 'payment_method', label: 'אמצעי תשלום (הוצאות)' },
+                { value: 'income_source', label: 'מקור הכנסה' },
+                { value: 'income_payment_method', label: 'אמצעי תשלום (הכנסות)' }]
                 } />
 
                 <Input
@@ -586,6 +590,53 @@ export default function Settings() {
               <div data-ev-id="ev_706cc8ed94" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_a586914028" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_3ae538b939" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+              )}
+              </div>
+            </Card>
+
+            {/* Divider for income classifications */}
+            <div data-ev-id="ev_787a0df9de" className="border-t border-border pt-4">
+              <h3 data-ev-id="ev_8388d6f493" className="text-lg font-semibold text-foreground mb-4">סיווגים להכנסות</h3>
+            </div>
+
+            {/* Income source options */}
+            <Card>
+              <h3 data-ev-id="ev_79e018247f" className="font-semibold text-foreground mb-4">מקור הכנסה</h3>
+              <div data-ev-id="ev_037d5f4fdc" className="flex flex-wrap gap-2">
+                {Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) =>
+              <div data-ev-id="ev_1cb24aa9c7" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                    <span data-ev-id="ev_01f96b7588" className="text-foreground">{label}</span>
+                    <span data-ev-id="ev_344fcf0c38" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
+                  </div>
+              )}
+                {classificationOptions.filter((o) => o.option_type === 'income_source').map((opt) =>
+              <div data-ev-id="ev_8838ae06fe" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+                    <span data-ev-id="ev_4da39637d9" className="text-foreground">{opt.label}</span>
+                    <button data-ev-id="ev_f71bcf3ab2" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+              )}
+              </div>
+            </Card>
+
+            {/* Income payment method options */}
+            <Card>
+              <h3 data-ev-id="ev_0aef15f0b3" className="font-semibold text-foreground mb-4">אמצעי תשלום (הכנסות)</h3>
+              <div data-ev-id="ev_c42d6a596c" className="flex flex-wrap gap-2">
+                {Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) =>
+              <div data-ev-id="ev_d0692700b6" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                    <span data-ev-id="ev_e0b41207a3" className="text-foreground">{label}</span>
+                    <span data-ev-id="ev_004484393d" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
+                  </div>
+              )}
+                {classificationOptions.filter((o) => o.option_type === 'income_payment_method').map((opt) =>
+              <div data-ev-id="ev_8a0404b07d" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+                    <span data-ev-id="ev_55d825db4a" className="text-foreground">{opt.label}</span>
+                    <button data-ev-id="ev_3aa9915914" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>

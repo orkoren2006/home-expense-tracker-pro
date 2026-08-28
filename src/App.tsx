@@ -16,6 +16,7 @@ import Expenses from '@/pages/Expenses';
 import Settings from '@/pages/Settings';
 import Rules from '@/pages/Rules';
 import Incomes from '@/pages/Incomes';
+import ImportIncomes from '@/pages/ImportIncomes';
 
 function ProtectedRoute({ children }: {children: React.ReactNode;}) {
   const { user, loading: authLoading } = useAuth();
@@ -60,6 +61,7 @@ export default function App() {
 			<Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
 			<Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
 			<Route path="/incomes" element={<ProtectedRoute><Incomes /></ProtectedRoute>} />
+			<Route path="/import-incomes" element={<ProtectedRoute><ImportIncomes /></ProtectedRoute>} />
 			<Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
 		</Routes>);
 

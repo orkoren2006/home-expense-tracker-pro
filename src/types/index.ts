@@ -84,11 +84,24 @@ export interface ParsedExpense {
   originalRow: Record<string, unknown>;
 }
 
+export interface ParsedIncome {
+  name: string;
+  amount: number;
+  date: string;
+  originalRow: Record<string, unknown>;
+}
+
 export interface ColumnMapping {
   name: string;
   amount: string;
   date: string;
   credit_card?: string;
+}
+
+export interface IncomeColumnMapping {
+  name: string;
+  amount: string;
+  date: string;
 }
 
 export interface ClassificationOption {

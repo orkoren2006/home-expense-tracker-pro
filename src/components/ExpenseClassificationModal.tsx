@@ -32,7 +32,7 @@ export function ExpenseClassificationModal({
   onSkip,
   onClose
 }: ExpenseClassificationModalProps) {
-  const { categories, creditCards, expenseRules, defaultSettings } = useHousehold();
+  const { categories, creditCards, expenseRules, defaultSettings, classificationOptions } = useHousehold();
 
   // Check if there's an existing rule for this expense name
   const existingRule = expenseRules.find(
@@ -110,40 +110,48 @@ export function ExpenseClassificationModal({
               label="תדירות תשלום"
               value={frequency}
               onChange={(e) => setFrequency(e.target.value as Frequency)}
-              options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+              options={[
+                ...Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label })),
+                ...classificationOptions
+                  .filter((o) => o.option_type === 'frequency')
+                  .map((o) => ({ value: o.value, label: o.label }))
+              ]} />
 
 
             <Select
               label="סוג סכום"
               value={amountType}
               onChange={(e) => setAmountType(e.target.value as AmountType)}
-              options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+              options={[
+                ...Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+                ...classificationOptions
+                  .filter((o) => o.option_type === 'amount_type')
+                  .map((o) => ({ value: o.value, label: o.label }))
+              ]} />
 
 
             <Select
               label="סוג הוצאה"
               value={expenseType}
               onChange={(e) => setExpenseType(e.target.value as ExpenseType)}
-              options={Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+              options={[
+                ...Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({ value, label })),
+                ...classificationOptions
+                  .filter((o) => o.option_type === 'expense_type')
+                  .map((o) => ({ value: o.value, label: o.label }))
+              ]} />
 
 
             <Select
               label="אמצעי תשלום"
               value={paymentMethod}
               onChange={(e) => setPaymentMethod(e.target.value as PaymentMethod)}
-              options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+              options={[
+                ...Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label })),
+                ...classificationOptions
+                  .filter((o) => o.option_type === 'payment_method')
+                  .map((o) => ({ value: o.value, label: o.label }))
+              ]} />
 
 
             
