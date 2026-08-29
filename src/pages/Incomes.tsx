@@ -49,6 +49,8 @@ export default function Incomes() {
   const [newIncomePaymentMethod, setNewIncomePaymentMethod] = useState<IncomePaymentMethod>('transfer');
   const [newIncomeSource, setNewIncomeSource] = useState<IncomeSource>('work');
   const [newIncomeNotes, setNewIncomeNotes] = useState('');
+  const [rememberRule, setRememberRule] = useState(true);
+  const [hasExistingRule, setHasExistingRule] = useState(false);
 
   const loadIncomes = async () => {
     if (!supabase || !household) return;
@@ -140,6 +142,8 @@ export default function Incomes() {
     setNewIncomePaymentMethod('transfer');
     setNewIncomeSource('work');
     setNewIncomeNotes('');
+    setRememberRule(true);
+    setHasExistingRule(false);
   };
 
   const proceedToDetails = () => {
@@ -155,6 +159,9 @@ export default function Incomes() {
       setNewIncomePaymentMethod(matchingRule.payment_method as IncomePaymentMethod);
       setNewIncomeSource(matchingRule.source as IncomeSource);
       setNewIncomeNotes(matchingRule.notes || '');
+      setHasExistingRule(true);
+    } else {
+      setHasExistingRule(false);
     }
 
     setAddStep('details');
@@ -165,6 +172,22 @@ export default function Incomes() {
 
     const amount = parseFloat(newIncomeAmount);
     if (isNaN(amount)) return;
+
+    // Save income rule if remember is checked and no existing rule
+    if (rememberRule && !hasExistingRule) {
+      await supabase.from('income_rules').upsert(
+        {
+          household_id: household.id,
+          income_name: newIncomeName.trim(),
+          frequency: newIncomeFrequency,
+          amount_type: newIncomeAmountType,
+          payment_method: newIncomePaymentMethod,
+          source: newIncomeSource,
+          notes: newIncomeNotes.trim() || null
+        },
+        { onConflict: 'household_id,income_name' }
+      );
+    }
 
     const { error } = await supabase.from('incomes').insert({
       household_id: household.id,
@@ -183,6 +206,7 @@ export default function Incomes() {
       resetAddForm();
       setShowAddForm(false);
       await loadIncomes();
+      await refreshData(); // Refresh to get updated rules
     }
   };
 
@@ -368,7 +392,20 @@ export default function Incomes() {
               value={newIncomeNotes}
               onChange={(e) => setNewIncomeNotes(e.target.value)} />
             </div>
-            <div data-ev-id="ev_fd82e3e182" className="flex gap-3 mt-4">
+            
+            {!hasExistingRule &&
+          <label data-ev-id="ev_755b6e0381" className="flex items-center gap-2 cursor-pointer mt-4">
+                <input data-ev-id="ev_e37371dc47"
+            type="checkbox"
+            checked={rememberRule}
+            onChange={(e) => setRememberRule(e.target.checked)}
+            className="w-5 h-5 rounded border-border text-primary focus:ring-primary" />
+
+                <span data-ev-id="ev_0313bb47c0" className="text-foreground">זכור להבא (סווג אוטומטית בפעם הבאה)</span>
+              </label>
+          }
+            
+            <div data-ev-id="ev_36dc287a90" className="flex gap-3 mt-4">
               <Button onClick={handleAddIncome} disabled={!newIncomeAmount}>
                 שמור הכנסה
               </Button>

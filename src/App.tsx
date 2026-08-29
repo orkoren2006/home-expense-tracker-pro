@@ -15,6 +15,7 @@ import Import from '@/pages/Import';
 import Expenses from '@/pages/Expenses';
 import Settings from '@/pages/Settings';
 import Rules from '@/pages/Rules';
+import IncomeRules from '@/pages/IncomeRules';
 import Incomes from '@/pages/Incomes';
 import ImportIncomes from '@/pages/ImportIncomes';
 
@@ -60,6 +61,7 @@ export default function App() {
 			<Route path="/import" element={<ProtectedRoute><Import /></ProtectedRoute>} />
 			<Route path="/expenses" element={<ProtectedRoute><Expenses /></ProtectedRoute>} />
 			<Route path="/rules" element={<ProtectedRoute><Rules /></ProtectedRoute>} />
+			<Route path="/income-rules" element={<ProtectedRoute><IncomeRules /></ProtectedRoute>} />
 			<Route path="/incomes" element={<ProtectedRoute><Incomes /></ProtectedRoute>} />
 			<Route path="/import-incomes" element={<ProtectedRoute><ImportIncomes /></ProtectedRoute>} />
 			<Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
