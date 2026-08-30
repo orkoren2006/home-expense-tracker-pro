@@ -175,7 +175,7 @@ export default function Incomes() {
 
     // Save income rule if remember is checked and no existing rule
     if (rememberRule && !hasExistingRule) {
-      await supabase.from('income_rules').upsert(
+      const { error: ruleError } = await supabase.from('income_rules').upsert(
         {
           household_id: household.id,
           income_name: newIncomeName.trim(),
@@ -187,6 +187,9 @@ export default function Incomes() {
         },
         { onConflict: 'household_id,income_name' }
       );
+      if (ruleError) {
+        console.error('Error saving income rule:', ruleError);
+      }
     }
 
     const { error } = await supabase.from('incomes').insert({

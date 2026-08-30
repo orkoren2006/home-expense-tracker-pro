@@ -153,25 +153,56 @@ export default function ImportIncomes() {
   const parseDate = (value: unknown): string => {
     if (!value) return new Date().toISOString().split('T')[0];
 
+    // Excel serial date number
     if (typeof value === 'number') {
-      const excelEpoch = new Date(1899, 11, 30);
-      const date = new Date(excelEpoch.getTime() + value * 24 * 60 * 60 * 1000);
-      return date.toISOString().split('T')[0];
+      // Excel epoch is Dec 30, 1899 (accounting for the leap year bug)
+      // Use UTC to avoid timezone issues
+      const excelEpoch = Date.UTC(1899, 11, 30);
+      const msPerDay = 24 * 60 * 60 * 1000;
+      const utcDate = new Date(excelEpoch + value * msPerDay);
+      const year = utcDate.getUTCFullYear();
+      const month = String(utcDate.getUTCMonth() + 1).padStart(2, '0');
+      const day = String(utcDate.getUTCDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
-    const str = String(value);
-    const parsed = new Date(str);
-    if (!isNaN(parsed.getTime())) {
-      return parsed.toISOString().split('T')[0];
+    const str = String(value).trim();
+    
+    // Try DD/MM/YYYY or DD-MM-YYYY (Israeli format)
+    const slashParts = str.split('/');
+    const dashParts = str.split('-');
+    
+    if (slashParts.length === 3) {
+      const [day, month, year] = slashParts.map((p) => parseInt(p, 10));
+      if (day && month && year && day <= 31 && month <= 12) {
+        const fullYear = year < 100 ? 2000 + year : year;
+        return `${fullYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
     }
-
-    // Try DD/MM/YYYY
-    const parts = str.split('/');
-    if (parts.length === 3) {
-      const [day, month, year] = parts.map((p) => parseInt(p, 10));
-      if (day && month && year) {
+    
+    // Check if it's already YYYY-MM-DD format
+    if (dashParts.length === 3 && dashParts[0].length === 4) {
+      const [year, month, day] = dashParts.map((p) => parseInt(p, 10));
+      if (year && month && day && month <= 12 && day <= 31) {
         return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
+    }
+    
+    // Try DD-MM-YYYY format
+    if (dashParts.length === 3 && dashParts[2].length === 4) {
+      const [day, month, year] = dashParts.map((p) => parseInt(p, 10));
+      if (day && month && year && day <= 31 && month <= 12) {
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      }
+    }
+
+    // Fallback: try native Date parsing (but be careful with format)
+    const parsed = new Date(str);
+    if (!isNaN(parsed.getTime())) {
+      const year = parsed.getFullYear();
+      const month = String(parsed.getMonth() + 1).padStart(2, '0');
+      const day = String(parsed.getDate()).padStart(2, '0');
+      return `${year}-${month}-${day}`;
     }
 
     return new Date().toISOString().split('T')[0];
