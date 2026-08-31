@@ -170,6 +170,44 @@ export type Database = {
           },
         ]
       }
+      default_income_settings: {
+        Row: {
+          amount_type: string
+          created_at: string
+          frequency: string
+          household_id: string
+          id: string
+          payment_method: string
+          source: string
+        }
+        Insert: {
+          amount_type?: string
+          created_at?: string
+          frequency?: string
+          household_id: string
+          id?: string
+          payment_method?: string
+          source?: string
+        }
+        Update: {
+          amount_type?: string
+          created_at?: string
+          frequency?: string
+          household_id?: string
+          id?: string
+          payment_method?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "default_income_settings_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: true
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_rules: {
         Row: {
           amount_type: string

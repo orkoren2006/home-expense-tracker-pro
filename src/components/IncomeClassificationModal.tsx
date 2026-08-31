@@ -30,7 +30,7 @@ export function IncomeClassificationModal({
   onSkip,
   onClose
 }: IncomeClassificationModalProps) {
-  const { incomeRules, classificationOptions } = useHousehold();
+  const { incomeRules, classificationOptions, defaultIncomeSettings } = useHousehold();
 
   // Check if there's an existing rule for this income name
   const existingRule = incomeRules.find(
@@ -38,16 +38,16 @@ export function IncomeClassificationModal({
   );
 
   const [frequency, setFrequency] = useState<Frequency>(
-    existingRule?.frequency || 'monthly'
+    existingRule?.frequency || defaultIncomeSettings?.frequency || 'monthly'
   );
   const [amountType, setAmountType] = useState<AmountType>(
-    existingRule?.amount_type || 'fixed'
+    existingRule?.amount_type || defaultIncomeSettings?.amount_type || 'fixed'
   );
   const [paymentMethod, setPaymentMethod] = useState<IncomePaymentMethod>(
-    existingRule?.payment_method || 'salary'
+    existingRule?.payment_method || defaultIncomeSettings?.payment_method || 'salary'
   );
   const [source, setSource] = useState<IncomeSource>(
-    existingRule?.source || 'work'
+    existingRule?.source || defaultIncomeSettings?.source || 'work'
   );
   const [remember, setRemember] = useState(true);
 

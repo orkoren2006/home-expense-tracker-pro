@@ -17,7 +17,7 @@ import {
 '@/types';
 
 export default function Incomes() {
-  const { household, incomeRules, refreshData } = useHousehold();
+  const { household, incomeRules, defaultIncomeSettings, refreshData } = useHousehold();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,10 +44,18 @@ export default function Incomes() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
-  const [newIncomeFrequency, setNewIncomeFrequency] = useState<Frequency>('monthly');
-  const [newIncomeAmountType, setNewIncomeAmountType] = useState<AmountType>('fixed');
-  const [newIncomePaymentMethod, setNewIncomePaymentMethod] = useState<IncomePaymentMethod>('transfer');
-  const [newIncomeSource, setNewIncomeSource] = useState<IncomeSource>('work');
+  const [newIncomeFrequency, setNewIncomeFrequency] = useState<Frequency>(
+    defaultIncomeSettings?.frequency || 'monthly'
+  );
+  const [newIncomeAmountType, setNewIncomeAmountType] = useState<AmountType>(
+    defaultIncomeSettings?.amount_type || 'fixed'
+  );
+  const [newIncomePaymentMethod, setNewIncomePaymentMethod] = useState<IncomePaymentMethod>(
+    defaultIncomeSettings?.payment_method || 'salary'
+  );
+  const [newIncomeSource, setNewIncomeSource] = useState<IncomeSource>(
+    defaultIncomeSettings?.source || 'work'
+  );
   const [newIncomeNotes, setNewIncomeNotes] = useState('');
   const [rememberRule, setRememberRule] = useState(true);
   const [hasExistingRule, setHasExistingRule] = useState(false);
@@ -75,6 +83,16 @@ export default function Incomes() {
     loadIncomes();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [household, filterMonth]);
+
+  // Sync form defaults when context loads
+  useEffect(() => {
+    if (defaultIncomeSettings) {
+      setNewIncomeFrequency(defaultIncomeSettings.frequency);
+      setNewIncomeAmountType(defaultIncomeSettings.amount_type);
+      setNewIncomePaymentMethod(defaultIncomeSettings.payment_method);
+      setNewIncomeSource(defaultIncomeSettings.source);
+    }
+  }, [defaultIncomeSettings]);
 
   const filteredIncomes = useMemo(() => {
     const filtered = incomes.filter((income) => {
@@ -137,10 +155,10 @@ export default function Incomes() {
     setNewIncomeDate(new Date().toISOString().split('T')[0]);
     const now = new Date();
     setNewIncomeBillingMonth(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`);
-    setNewIncomeFrequency('monthly');
-    setNewIncomeAmountType('fixed');
-    setNewIncomePaymentMethod('transfer');
-    setNewIncomeSource('work');
+    setNewIncomeFrequency(defaultIncomeSettings?.frequency || 'monthly');
+    setNewIncomeAmountType(defaultIncomeSettings?.amount_type || 'fixed');
+    setNewIncomePaymentMethod(defaultIncomeSettings?.payment_method || 'salary');
+    setNewIncomeSource(defaultIncomeSettings?.source || 'work');
     setNewIncomeNotes('');
     setRememberRule(true);
     setHasExistingRule(false);

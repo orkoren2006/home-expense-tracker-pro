@@ -1,7 +1,7 @@
 import { useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import type { Household, HouseholdMember, Category, CreditCard, ExpenseRule, IncomeRule, DefaultExpenseSettings, ClassificationOption } from '@/types';
+import type { Household, HouseholdMember, Category, CreditCard, ExpenseRule, IncomeRule, DefaultExpenseSettings, DefaultIncomeSettings, ClassificationOption } from '@/types';
 import { HouseholdContext } from '@/contexts/householdContext';
 
 export { HouseholdContext } from '@/contexts/householdContext';
@@ -16,6 +16,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
   const [expenseRules, setExpenseRules] = useState<ExpenseRule[]>([]);
   const [incomeRules, setIncomeRules] = useState<IncomeRule[]>([]);
   const [defaultSettings, setDefaultSettings] = useState<DefaultExpenseSettings | null>(null);
+  const [defaultIncomeSettings, setDefaultIncomeSettings] = useState<DefaultIncomeSettings | null>(null);
   const [classificationOptions, setClassificationOptions] = useState<ClassificationOption[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -52,13 +53,14 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setHousehold(householdData as Household);
 
       // Load all related data in parallel
-      const [membersRes, categoriesRes, cardsRes, rulesRes, incomeRulesRes, settingsRes, classOptionsRes] = await Promise.all([
+      const [membersRes, categoriesRes, cardsRes, rulesRes, incomeRulesRes, settingsRes, incomeSettingsRes, classOptionsRes] = await Promise.all([
         supabase.from('household_members').select('*').eq('household_id', householdData.id),
         supabase.from('categories').select('*').eq('household_id', householdData.id),
         supabase.from('credit_cards').select('*').eq('household_id', householdData.id),
         supabase.from('expense_rules').select('*').eq('household_id', householdData.id),
         supabase.from('income_rules').select('*').eq('household_id', householdData.id),
         supabase.from('default_expense_settings').select('*').eq('household_id', householdData.id).limit(1),
+        supabase.from('default_income_settings').select('*').eq('household_id', householdData.id).limit(1),
         supabase.from('classification_options').select('*').eq('household_id', householdData.id),
       ]);
 
@@ -68,6 +70,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
       setExpenseRules((rulesRes.data ?? []) as ExpenseRule[]);
       setIncomeRules((incomeRulesRes.data ?? []) as IncomeRule[]);
       setDefaultSettings((settingsRes.data?.[0] as DefaultExpenseSettings) ?? null);
+      setDefaultIncomeSettings((incomeSettingsRes.data?.[0] as DefaultIncomeSettings) ?? null);
       setClassificationOptions((classOptionsRes.data ?? []) as ClassificationOption[]);
     }
 
@@ -179,6 +182,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
     setExpenseRules([]);
     setIncomeRules([]);
     setDefaultSettings(null);
+    setDefaultIncomeSettings(null);
   };
 
   const refreshData = async () => {
@@ -195,6 +199,7 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
         expenseRules,
         incomeRules,
         defaultSettings,
+        defaultIncomeSettings,
         classificationOptions,
         loading,
         createHousehold,

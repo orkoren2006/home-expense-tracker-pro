@@ -8,7 +8,7 @@ import { Select } from '@/components/ui/Select';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
 import { parseRulesExcel } from '@/utils/excelParsers';
-import type { Frequency, AmountType, ExpenseType, PaymentMethod, ClassificationOption } from '@/types';
+import type { Frequency, AmountType, ExpenseType, PaymentMethod, ClassificationOption, IncomePaymentMethod, IncomeSource } from '@/types';
 import {
   FREQUENCY_LABELS,
   AMOUNT_TYPE_LABELS,
@@ -23,7 +23,7 @@ type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'ho
 const TAB_STORAGE_KEY = 'settings_active_tab';
 
 export default function Settings() {
-  const { household, categories, creditCards, defaultSettings, refreshData } = useHousehold();
+  const { household, categories, creditCards, defaultSettings, defaultIncomeSettings, refreshData } = useHousehold();
 
   // Persist tab in localStorage
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
@@ -69,6 +69,20 @@ export default function Settings() {
     defaultSettings?.payment_method || 'credit'
   );
 
+  // Default income settings form
+  const [defaultIncomeFrequency, setDefaultIncomeFrequency] = useState<Frequency>(
+    defaultIncomeSettings?.frequency || 'monthly'
+  );
+  const [defaultIncomeAmountType, setDefaultIncomeAmountType] = useState<AmountType>(
+    defaultIncomeSettings?.amount_type || 'fixed'
+  );
+  const [defaultIncomePaymentMethod, setDefaultIncomePaymentMethod] = useState<IncomePaymentMethod>(
+    defaultIncomeSettings?.payment_method || 'salary'
+  );
+  const [defaultIncomeSource, setDefaultIncomeSource] = useState<IncomeSource>(
+    defaultIncomeSettings?.source || 'work'
+  );
+
   const tabs: Array<{id: SettingsTab;label: string;icon: typeof Tag;}> = [
   { id: 'categories', label: 'קטגוריות', icon: Tag },
   { id: 'classifications', label: 'סיווגים', icon: List },
@@ -76,6 +90,27 @@ export default function Settings() {
   { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
   { id: 'import', label: 'ייבוא כללים', icon: Upload },
   { id: 'household', label: 'בית', icon: Users }];
+
+  // Sync expense defaults when they load from context
+  useEffect(() => {
+    if (defaultSettings) {
+      setDefaultCategoryId(defaultSettings.category_id || '');
+      setDefaultFrequency(defaultSettings.frequency);
+      setDefaultAmountType(defaultSettings.amount_type);
+      setDefaultExpenseType(defaultSettings.expense_type);
+      setDefaultPaymentMethod(defaultSettings.payment_method);
+    }
+  }, [defaultSettings]);
+
+  // Sync income defaults when they load from context
+  useEffect(() => {
+    if (defaultIncomeSettings) {
+      setDefaultIncomeFrequency(defaultIncomeSettings.frequency);
+      setDefaultIncomeAmountType(defaultIncomeSettings.amount_type);
+      setDefaultIncomePaymentMethod(defaultIncomeSettings.payment_method);
+      setDefaultIncomeSource(defaultIncomeSettings.source);
+    }
+  }, [defaultIncomeSettings]);
 
   // Load classification options
   useEffect(() => {
@@ -181,6 +216,25 @@ export default function Settings() {
         amount_type: defaultAmountType,
         expense_type: defaultExpenseType,
         payment_method: defaultPaymentMethod
+      },
+      { onConflict: 'household_id' }
+    );
+
+    await refreshData();
+    setLoading(false);
+  };
+
+  const handleSaveIncomeDefaults = async () => {
+    if (!supabase || !household) return;
+
+    setLoading(true);
+    await supabase.from('default_income_settings').upsert(
+      {
+        household_id: household.id,
+        frequency: defaultIncomeFrequency,
+        amount_type: defaultIncomeAmountType,
+        payment_method: defaultIncomePaymentMethod,
+        source: defaultIncomeSource
       },
       { onConflict: 'household_id' }
     );
@@ -710,6 +764,7 @@ export default function Settings() {
 
         {/* Defaults tab */}
         {activeTab === 'defaults' &&
+        <div data-ev-id="ev_ba2f70df64" className="flex flex-col gap-6">
         <Card>
             <h3 data-ev-id="ev_8b947cf9d8" className="font-semibold text-foreground mb-4">
               ברירות מחדל להוצאות חדשות
@@ -720,53 +775,53 @@ export default function Settings() {
 
             <div data-ev-id="ev_1415b99817" className="flex flex-col gap-4">
               <Select
-              label="קטגוריה"
-              value={defaultCategoryId}
-              onChange={(e) => setDefaultCategoryId(e.target.value)}
-              options={[
-              { value: '', label: 'ללא קטגוריה' },
-              ...expenseCategories.map((c) => ({ value: c.id, label: c.name }))]
-              } />
+                label="קטגוריה"
+                value={defaultCategoryId}
+                onChange={(e) => setDefaultCategoryId(e.target.value)}
+                options={[
+                { value: '', label: 'ללא קטגוריה' },
+                ...expenseCategories.map((c) => ({ value: c.id, label: c.name }))]
+                } />
 
 
               <Select
-              label="תדירות"
-              value={defaultFrequency}
-              onChange={(e) => setDefaultFrequency(e.target.value as Frequency)}
-              options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+                label="תדירות"
+                value={defaultFrequency}
+                onChange={(e) => setDefaultFrequency(e.target.value as Frequency)}
+                options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
               <Select
-              label="סוג סכום"
-              value={defaultAmountType}
-              onChange={(e) => setDefaultAmountType(e.target.value as AmountType)}
-              options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+                label="סוג סכום"
+                value={defaultAmountType}
+                onChange={(e) => setDefaultAmountType(e.target.value as AmountType)}
+                options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
               <Select
-              label="סוג הוצאה"
-              value={defaultExpenseType}
-              onChange={(e) => setDefaultExpenseType(e.target.value as ExpenseType)}
-              options={Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+                label="סוג הוצאה"
+                value={defaultExpenseType}
+                onChange={(e) => setDefaultExpenseType(e.target.value as ExpenseType)}
+                options={Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
               <Select
-              label="אמצעי תשלום"
-              value={defaultPaymentMethod}
-              onChange={(e) => setDefaultPaymentMethod(e.target.value as PaymentMethod)}
-              options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                value,
-                label
-              }))} />
+                label="אמצעי תשלום"
+                value={defaultPaymentMethod}
+                onChange={(e) => setDefaultPaymentMethod(e.target.value as PaymentMethod)}
+                options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
               <Button onClick={handleSaveDefaults} disabled={loading} className="self-start mt-2">
@@ -774,6 +829,63 @@ export default function Settings() {
               </Button>
             </div>
           </Card>
+
+          {/* Income defaults */}
+          <Card>
+            <h3 data-ev-id="ev_ccc0662d8d" className="font-semibold text-foreground mb-4">
+              ברירות מחדל להכנסות חדשות
+            </h3>
+            <p data-ev-id="ev_59542e4b03" className="text-muted-foreground mb-6">
+              כשמופיעה הכנסה לא מוכרת, הגדרות אלו יופיעו אוטומטית
+            </p>
+
+            <div data-ev-id="ev_ef9c0d20e6" className="flex flex-col gap-4">
+              <Select
+                label="מקור"
+                value={defaultIncomeSource}
+                onChange={(e) => setDefaultIncomeSource(e.target.value as IncomeSource)}
+                options={Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
+
+
+              <Select
+                label="תדירות"
+                value={defaultIncomeFrequency}
+                onChange={(e) => setDefaultIncomeFrequency(e.target.value as Frequency)}
+                options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
+
+
+              <Select
+                label="סוג סכום"
+                value={defaultIncomeAmountType}
+                onChange={(e) => setDefaultIncomeAmountType(e.target.value as AmountType)}
+                options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
+
+
+              <Select
+                label="אמצעי תשלום"
+                value={defaultIncomePaymentMethod}
+                onChange={(e) => setDefaultIncomePaymentMethod(e.target.value as IncomePaymentMethod)}
+                options={Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
+
+
+              <Button onClick={handleSaveIncomeDefaults} disabled={loading} className="self-start mt-2">
+                שמור ברירות מחדל להכנסות
+              </Button>
+            </div>
+          </Card>
+        </div>
         }
 
         {/* Import rules tab */}

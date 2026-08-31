@@ -61,6 +61,15 @@ export interface DefaultExpenseSettings {
   payment_method: PaymentMethod;
 }
 
+export interface DefaultIncomeSettings {
+  id: string;
+  household_id: string;
+  frequency: Frequency;
+  amount_type: AmountType;
+  payment_method: IncomePaymentMethod;
+  source: IncomeSource;
+}
+
 export interface Household {
   id: string;
   name: string;
