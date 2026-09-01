@@ -15,12 +15,12 @@ export function Layout({ children }: LayoutProps) {
 
   const navItems = [
   { path: '/', icon: Home, label: 'בית' },
-  { path: '/import', icon: Upload, label: 'ייבוא הוצאות' },
-  { path: '/import-incomes', icon: Upload, label: 'ייבוא הכנסות' },
   { path: '/expenses', icon: List, label: 'הוצאות' },
   { path: '/incomes', icon: Wallet, label: 'הכנסות' },
   { path: '/rules', icon: FileText, label: 'כללי הוצאות' },
   { path: '/income-rules', icon: FileText, label: 'כללי הכנסות' },
+   { path: '/import', icon: Upload, label: 'ייבוא הוצאות' },
+  { path: '/import-incomes', icon: Upload, label: 'ייבוא הכנסות' },
   { path: '/settings', icon: Settings, label: 'הגדרות' }];
 
 
