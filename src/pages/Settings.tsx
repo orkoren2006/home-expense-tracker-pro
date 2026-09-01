@@ -15,7 +15,9 @@ import {
   EXPENSE_TYPE_LABELS,
   PAYMENT_METHOD_LABELS,
   INCOME_SOURCE_LABELS,
-  INCOME_PAYMENT_METHOD_LABELS } from
+  INCOME_PAYMENT_METHOD_LABELS,
+  EXPENSE_COLUMN_OPTIONS,
+  INCOME_COLUMN_OPTIONS } from
 '@/types';
 
 type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import';
@@ -23,7 +25,7 @@ type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'ho
 const TAB_STORAGE_KEY = 'settings_active_tab';
 
 export default function Settings() {
-  const { household, categories, creditCards, defaultSettings, defaultIncomeSettings, refreshData } = useHousehold();
+  const { household, categories, creditCards, defaultSettings, defaultIncomeSettings, displaySettings, refreshData } = useHousehold();
 
   // Persist tab in localStorage
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
@@ -83,6 +85,14 @@ export default function Settings() {
     defaultIncomeSettings?.source || 'work'
   );
 
+  // Display settings
+  const [expenseColumns, setExpenseColumns] = useState<string[]>(
+    displaySettings?.expense_columns || ['name', 'amount', 'date', 'category', 'credit_card']
+  );
+  const [incomeColumns, setIncomeColumns] = useState<string[]>(
+    displaySettings?.income_columns || ['name', 'amount', 'date', 'source']
+  );
+
   const tabs: Array<{id: SettingsTab;label: string;icon: typeof Tag;}> = [
   { id: 'categories', label: 'קטגוריות', icon: Tag },
   { id: 'classifications', label: 'סיווגים', icon: List },
@@ -111,6 +121,14 @@ export default function Settings() {
       setDefaultIncomeSource(defaultIncomeSettings.source);
     }
   }, [defaultIncomeSettings]);
+
+  // Sync display settings when they load from context
+  useEffect(() => {
+    if (displaySettings) {
+      setExpenseColumns(displaySettings.expense_columns);
+      setIncomeColumns(displaySettings.income_columns);
+    }
+  }, [displaySettings]);
 
   // Load classification options
   useEffect(() => {
@@ -241,6 +259,45 @@ export default function Settings() {
 
     await refreshData();
     setLoading(false);
+  };
+
+  const handleSaveDisplaySettings = async () => {
+    if (!supabase || !household) return;
+
+    setLoading(true);
+    await supabase.from('display_settings').upsert(
+      {
+        household_id: household.id,
+        expense_columns: expenseColumns,
+        income_columns: incomeColumns
+      },
+      { onConflict: 'household_id' }
+    );
+
+    await refreshData();
+    setLoading(false);
+  };
+
+  const toggleExpenseColumn = (key: string) => {
+    const option = EXPENSE_COLUMN_OPTIONS.find((o) => o.key === key);
+    if (option && 'required' in option && option.required) return; // Can't toggle required columns
+
+    setExpenseColumns((prev) =>
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
+    );
+  };
+
+  const toggleIncomeColumn = (key: string) => {
+    const option = INCOME_COLUMN_OPTIONS.find((o) => o.key === key);
+    if (option && 'required' in option && option.required) return; // Can't toggle required columns
+
+    setIncomeColumns((prev) =>
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
+    );
   };
 
   const handleCopyInviteCode = () => {
@@ -882,6 +939,76 @@ export default function Settings() {
 
               <Button onClick={handleSaveIncomeDefaults} disabled={loading} className="self-start mt-2">
                 שמור ברירות מחדל להכנסות
+              </Button>
+            </div>
+          </Card>
+
+          {/* Display settings */}
+          <Card>
+            <h3 data-ev-id="ev_62b3887880" className="font-semibold text-foreground mb-4">
+              הגדרות תצוגה
+            </h3>
+            <p data-ev-id="ev_900442a79d" className="text-muted-foreground mb-6">
+              בחר אילו שדות יוצגו בטבלאות ההוצאות וההכנסות. כל שדה ניתן למיון בלחיצה על הכותרת.
+            </p>
+
+            <div data-ev-id="ev_e568ffa696" className="flex flex-col gap-6">
+              {/* Expense columns */}
+              <div data-ev-id="ev_f21662b384">
+                <h4 data-ev-id="ev_4c608eef96" className="font-medium text-foreground mb-3">שדות הוצאות</h4>
+                <div data-ev-id="ev_8c44bcd238" className="flex flex-wrap gap-2">
+                  {EXPENSE_COLUMN_OPTIONS.map((option) => {
+                    const isSelected = expenseColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as { required?: boolean }).required : false;
+                    return (
+                      <button data-ev-id="ev_874fbec044"
+                      key={option.key}
+                      onClick={() => toggleExpenseColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                      isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${
+                      isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+
+                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                        {option.label}
+                        {isRequired && ' (חובה)'}
+                      </button>);
+
+                  })}
+                </div>
+              </div>
+
+              {/* Income columns */}
+              <div data-ev-id="ev_b9b08f0f7e">
+                <h4 data-ev-id="ev_1ab439936b" className="font-medium text-foreground mb-3">שדות הכנסות</h4>
+                <div data-ev-id="ev_5a75868e2b" className="flex flex-wrap gap-2">
+                  {INCOME_COLUMN_OPTIONS.map((option) => {
+                    const isSelected = incomeColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as { required?: boolean }).required : false;
+                    return (
+                      <button data-ev-id="ev_035ecd9e86"
+                      key={option.key}
+                      onClick={() => toggleIncomeColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                      isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${
+                      isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+
+                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                        {option.label}
+                        {isRequired && ' (חובה)'}
+                      </button>);
+
+                  })}
+                </div>
+              </div>
+
+              <Button onClick={handleSaveDisplaySettings} disabled={loading} className="self-start mt-2">
+                שמור הגדרות תצוגה
               </Button>
             </div>
           </Card>

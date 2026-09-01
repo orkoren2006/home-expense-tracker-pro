@@ -13,11 +13,12 @@ import {
   FREQUENCY_LABELS,
   AMOUNT_TYPE_LABELS,
   INCOME_PAYMENT_METHOD_LABELS,
-  INCOME_SOURCE_LABELS } from
+  INCOME_SOURCE_LABELS,
+  INCOME_COLUMN_OPTIONS } from
 '@/types';
 
 export default function Incomes() {
-  const { household, incomeRules, defaultIncomeSettings, refreshData } = useHousehold();
+  const { household, incomeRules, defaultIncomeSettings, displaySettings, refreshData } = useHousehold();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -30,9 +31,13 @@ export default function Incomes() {
   const [filterSource, setFilterSource] = useState('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
 
-  // Sorting
-  const [sortField, setSortField] = useState<'name' | 'amount' | 'date'>('date');
+  // Sorting - all columns are sortable
+  type IncomeSortField = 'name' | 'amount' | 'date' | 'source' | 'payment_method' | 'frequency' | 'amount_type' | 'notes';
+  const [sortField, setSortField] = useState<IncomeSortField>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Get visible columns from display settings or use defaults
+  const visibleColumns = displaySettings?.income_columns || ['name', 'amount', 'date', 'source'];
 
   // Add income form - two step flow
   const [addStep, setAddStep] = useState<'name' | 'details'>('name');
@@ -117,6 +122,29 @@ export default function Incomes() {
         case 'date':
           cmp = a.date.localeCompare(b.date);
           break;
+        case 'source':
+          cmp = (INCOME_SOURCE_LABELS[a.source as IncomeSource] || a.source).localeCompare(
+            INCOME_SOURCE_LABELS[b.source as IncomeSource] || b.source, 'he'
+          );
+          break;
+        case 'payment_method':
+          cmp = (INCOME_PAYMENT_METHOD_LABELS[a.payment_method as IncomePaymentMethod] || a.payment_method).localeCompare(
+            INCOME_PAYMENT_METHOD_LABELS[b.payment_method as IncomePaymentMethod] || b.payment_method, 'he'
+          );
+          break;
+        case 'frequency':
+          cmp = (FREQUENCY_LABELS[a.frequency as Frequency] || a.frequency).localeCompare(
+            FREQUENCY_LABELS[b.frequency as Frequency] || b.frequency, 'he'
+          );
+          break;
+        case 'amount_type':
+          cmp = (AMOUNT_TYPE_LABELS[a.amount_type as AmountType] || a.amount_type).localeCompare(
+            AMOUNT_TYPE_LABELS[b.amount_type as AmountType] || b.amount_type, 'he'
+          );
+          break;
+        case 'notes':
+          cmp = (a.notes || '').localeCompare(b.notes || '', 'he');
+          break;
       }
       return sortDirection === 'asc' ? cmp : -cmp;
     });
@@ -124,7 +152,7 @@ export default function Incomes() {
     return result;
   }, [incomes, searchTerm, filterFrequency, filterSource, filterPaymentMethod, sortField, sortDirection]);
 
-  const handleSort = (field: typeof sortField) => {
+  const handleSort = (field: IncomeSortField) => {
     if (sortField === field) {
       setSortDirection((d) => d === 'asc' ? 'desc' : 'asc');
     } else {
@@ -133,9 +161,83 @@ export default function Incomes() {
     }
   };
 
-  const SortIcon = ({ field }: {field: typeof sortField;}) => {
+  const SortIcon = ({ field }: {field: IncomeSortField;}) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
     return sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />;
+  };
+
+  // Column label mapping
+  const columnLabels: Record<string, string> = {
+    name: 'שם',
+    amount: 'סכום',
+    date: 'תאריך',
+    source: 'מקור',
+    payment_method: 'אמצעי תשלום',
+    frequency: 'תדירות',
+    amount_type: 'סוג סכום',
+    notes: 'הערות'
+  };
+
+  // Render cell content based on column key
+  const renderCell = (income: Income, key: string) => {
+    switch (key) {
+      case 'name':
+        return (
+          <>
+            <p data-ev-id="ev_5021c77e5e" className="font-medium text-foreground">{income.name}</p>
+            {income.notes && visibleColumns.includes('notes') === false &&
+            <p data-ev-id="ev_2d351d8fc2" className="text-xs text-muted-foreground">{income.notes}</p>
+            }
+            <p data-ev-id="ev_eb225f485c" className="text-sm text-muted-foreground md:hidden">
+              {new Date(income.date).toLocaleDateString('he-IL')}
+            </p>
+          </>);
+
+      case 'amount':
+        return (
+          <span data-ev-id="ev_e7ec958f48" className="font-semibold text-green-600">
+            ₪{Number(income.amount).toLocaleString()}
+          </span>);
+
+      case 'date':
+        return (
+          <span data-ev-id="ev_888df6e180" className="text-muted-foreground">
+            {new Date(income.date).toLocaleDateString('he-IL')}
+          </span>);
+
+      case 'source':
+        return (
+          <span data-ev-id="ev_854ee7dee7" className="text-foreground text-sm">
+            {INCOME_SOURCE_LABELS[income.source as IncomeSource] || income.source}
+          </span>);
+
+      case 'payment_method':
+        return (
+          <span data-ev-id="ev_9108cfa12f" className="text-foreground text-sm">
+            {INCOME_PAYMENT_METHOD_LABELS[income.payment_method as IncomePaymentMethod] || income.payment_method}
+          </span>);
+
+      case 'frequency':
+        return (
+          <span data-ev-id="ev_0ffd473761" className="text-foreground text-sm">
+            {FREQUENCY_LABELS[income.frequency as Frequency] || income.frequency}
+          </span>);
+
+      case 'amount_type':
+        return (
+          <span data-ev-id="ev_2d22777922" className="text-foreground text-sm">
+            {AMOUNT_TYPE_LABELS[income.amount_type as AmountType] || income.amount_type}
+          </span>);
+
+      case 'notes':
+        return (
+          <span data-ev-id="ev_eafdc4cdae" className="text-muted-foreground text-sm">
+            {income.notes || '-'}
+          </span>);
+
+      default:
+        return null;
+    }
   };
 
   const totalAmount = filteredIncomes.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -513,62 +615,53 @@ export default function Incomes() {
               <p data-ev-id="ev_9562093b34" className="text-muted-foreground">אין הכנסות להצגה</p>
             </Card> :
         <Card variant="outlined" className="p-0 overflow-hidden">
-              <div data-ev-id="ev_e90a361bef" className="overflow-x-auto">
-                <table data-ev-id="ev_7c5c368122" className="w-full">
-                  <thead data-ev-id="ev_1352160be8" className="bg-muted">
-                    <tr data-ev-id="ev_601c65ff94">
-                      <th data-ev-id="ev_8e28a548af" className="text-right p-3 text-sm font-medium text-muted-foreground">
-                        <button data-ev-id="ev_602f776964" onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-foreground">
-                          שם <SortIcon field="name" />
-                        </button>
-                      </th>
-                      <th data-ev-id="ev_9ece153f12" className="text-right p-3 text-sm font-medium text-muted-foreground">
-                        <button data-ev-id="ev_2b4480096d" onClick={() => handleSort('amount')} className="flex items-center gap-1 hover:text-foreground">
-                          סכום <SortIcon field="amount" />
-                        </button>
-                      </th>
-                      <th data-ev-id="ev_ac8259a32c" className="text-right p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                        <button data-ev-id="ev_6264fd678f" onClick={() => handleSort('date')} className="flex items-center gap-1 hover:text-foreground">
-                          תאריך <SortIcon field="date" />
-                        </button>
-                      </th>
-                      <th data-ev-id="ev_c0490960a5" className="text-right p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                        מקור
-                      </th>
-                      <th data-ev-id="ev_a03196849d" className="p-3"></th>
+              <div data-ev-id="ev_8dbe40f43f" className="overflow-x-auto">
+                <table data-ev-id="ev_02214e90b7" className="w-full">
+                  <thead data-ev-id="ev_c9bf592ff0" className="bg-muted">
+                    <tr data-ev-id="ev_2ae19065b8">
+                      {visibleColumns.map((col, idx) =>
+                  <th data-ev-id="ev_a7a252d6d9"
+                  key={col}
+                  className={`text-right p-3 text-sm font-medium text-muted-foreground ${
+                  idx >= 2 ? 'hidden md:table-cell' : ''}`
+                  }>
+
+                          <button data-ev-id="ev_199d56ea78"
+                    onClick={() => handleSort(col as IncomeSortField)}
+                    className="flex items-center gap-1 hover:text-foreground">
+
+                            {columnLabels[col]} <SortIcon field={col as IncomeSortField} />
+                          </button>
+                        </th>
+                  )}
+                      <th data-ev-id="ev_d351dd01ab" className="p-3"></th>
                     </tr>
                   </thead>
-                  <tbody data-ev-id="ev_253cae1675" className="divide-y divide-border">
+                  <tbody data-ev-id="ev_4524f97de0" className="divide-y divide-border">
                     {filteredIncomes.map((income) =>
-                <tr data-ev-id="ev_458dfad23f" key={income.id} className="hover:bg-muted/50">
-                        <td data-ev-id="ev_c3a3c8e904" className="p-3">
-                          <p data-ev-id="ev_18a17d8d79" className="font-medium text-foreground">{income.name}</p>
-                          {income.notes && <p data-ev-id="ev_ae15e9a257" className="text-xs text-muted-foreground">{income.notes}</p>}
-                          <p data-ev-id="ev_37550ebdf0" className="text-sm text-muted-foreground md:hidden">
-                            {new Date(income.date).toLocaleDateString('he-IL')}
-                          </p>
-                        </td>
-                        <td data-ev-id="ev_80db3ee260" className="p-3 font-semibold text-green-600">
-                          ₪{Number(income.amount).toLocaleString()}
-                        </td>
-                        <td data-ev-id="ev_e0ac8247ab" className="p-3 text-muted-foreground hidden md:table-cell">
-                          {new Date(income.date).toLocaleDateString('he-IL')}
-                        </td>
-                        <td data-ev-id="ev_ae2e8bdc1d" className="p-3 hidden md:table-cell">
-                          <span data-ev-id="ev_e04f32c0c6" className="text-foreground text-sm">
-                            {INCOME_SOURCE_LABELS[income.source as IncomeSource] || income.source}
-                          </span>
-                        </td>
-                        <td data-ev-id="ev_af655e99d1" className="p-3">
-                          <div data-ev-id="ev_2f92b4daa4" className="flex gap-2 justify-end">
-                            <button data-ev-id="ev_cf8fcdd959"
+                <tr data-ev-id="ev_7d2660e885" key={income.id} className="hover:bg-muted/50">
+                        {visibleColumns.map((col, idx) =>
+                  <td data-ev-id="ev_05c6a6f27a"
+                  key={col}
+                  className={`p-3 ${
+                  idx >= 2 ? 'hidden md:table-cell' : ''}`
+                  }>
+
+                            {renderCell(income, col)}
+                          </td>
+                  )}
+                        <td data-ev-id="ev_414f6ea079" className="p-3">
+                          <div data-ev-id="ev_691070c5d1" className="flex gap-2 justify-end">
+                            <button data-ev-id="ev_d5921d5d31"
                       onClick={() => setEditingIncome(income)}
                       className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
+
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button data-ev-id="ev_319cc0d655"
+                            <button data-ev-id="ev_0a81cdee6d"
                       onClick={() => handleDelete(income.id)}
                       className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500">
+
                               <Trash2 className="w-4 h-4" />
                             </button>
                           </div>

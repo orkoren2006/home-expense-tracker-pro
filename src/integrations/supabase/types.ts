@@ -208,6 +208,41 @@ export type Database = {
           },
         ]
       }
+      display_settings: {
+        Row: {
+          created_at: string
+          expense_columns: Json
+          household_id: string
+          id: string
+          income_columns: Json
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          expense_columns?: Json
+          household_id: string
+          id?: string
+          income_columns?: Json
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          expense_columns?: Json
+          household_id?: string
+          id?: string
+          income_columns?: Json
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "display_settings_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: true
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       expense_rules: {
         Row: {
           amount_type: string

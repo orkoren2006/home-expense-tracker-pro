@@ -70,6 +70,38 @@ export interface DefaultIncomeSettings {
   source: IncomeSource;
 }
 
+export interface DisplaySettings {
+  id: string;
+  household_id: string;
+  expense_columns: string[];
+  income_columns: string[];
+}
+
+// Available column options for expenses and incomes
+export const EXPENSE_COLUMN_OPTIONS = [
+  { key: 'name', label: 'שם', required: true },
+  { key: 'amount', label: 'סכום', required: true },
+  { key: 'date', label: 'תאריך' },
+  { key: 'category', label: 'קטגוריה' },
+  { key: 'credit_card', label: 'כרטיס אשראי' },
+  { key: 'payment_method', label: 'אמצעי תשלום' },
+  { key: 'frequency', label: 'תדירות' },
+  { key: 'expense_type', label: 'סוג הוצאה' },
+  { key: 'amount_type', label: 'סוג סכום' },
+  { key: 'notes', label: 'הערות' },
+] as const;
+
+export const INCOME_COLUMN_OPTIONS = [
+  { key: 'name', label: 'שם', required: true },
+  { key: 'amount', label: 'סכום', required: true },
+  { key: 'date', label: 'תאריך' },
+  { key: 'source', label: 'מקור' },
+  { key: 'payment_method', label: 'אמצעי תשלום' },
+  { key: 'frequency', label: 'תדירות' },
+  { key: 'amount_type', label: 'סוג סכום' },
+  { key: 'notes', label: 'הערות' },
+] as const;
+
 export interface Household {
   id: string;
   name: string;

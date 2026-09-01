@@ -13,11 +13,12 @@ import {
   FREQUENCY_LABELS,
   AMOUNT_TYPE_LABELS,
   EXPENSE_TYPE_LABELS,
-  PAYMENT_METHOD_LABELS } from
+  PAYMENT_METHOD_LABELS,
+  EXPENSE_COLUMN_OPTIONS } from
 '@/types';
 
 export default function Expenses() {
-  const { household, categories, creditCards, classificationOptions, expenseRules, refreshData } = useHousehold();
+  const { household, categories, creditCards, classificationOptions, expenseRules, displaySettings, refreshData } = useHousehold();
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -42,9 +43,13 @@ export default function Expenses() {
   const [bulkExpenseType, setBulkExpenseType] = useState('');
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
 
-  // Sorting
-  const [sortField, setSortField] = useState<'name' | 'amount' | 'date' | 'category'>('date');
+  // Sorting - all columns are sortable
+  type ExpenseSortField = 'name' | 'amount' | 'date' | 'category' | 'credit_card' | 'payment_method' | 'frequency' | 'expense_type' | 'amount_type' | 'notes';
+  const [sortField, setSortField] = useState<ExpenseSortField>('date');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+
+  // Get visible columns from display settings or use defaults
+  const visibleColumns = displaySettings?.expense_columns || ['name', 'amount', 'date', 'category', 'credit_card'];
 
   // Add expense form - two step flow
   const [addStep, setAddStep] = useState<'name' | 'details'>('name');
@@ -162,14 +167,43 @@ export default function Expenses() {
             cmp = aCat.localeCompare(bCat, 'he');
             break;
           }
+        case 'credit_card':{
+            const aCard = creditCards.find((c) => c.id === a.credit_card_id)?.name || '';
+            const bCard = creditCards.find((c) => c.id === b.credit_card_id)?.name || '';
+            cmp = aCard.localeCompare(bCard, 'he');
+            break;
+          }
+        case 'payment_method':
+          cmp = (paymentMethodLabels[a.payment_method] || a.payment_method).localeCompare(
+            paymentMethodLabels[b.payment_method] || b.payment_method, 'he'
+          );
+          break;
+        case 'frequency':
+          cmp = (frequencyLabels[a.frequency] || a.frequency).localeCompare(
+            frequencyLabels[b.frequency] || b.frequency, 'he'
+          );
+          break;
+        case 'expense_type':
+          cmp = (expenseTypeLabels[a.expense_type] || a.expense_type).localeCompare(
+            expenseTypeLabels[b.expense_type] || b.expense_type, 'he'
+          );
+          break;
+        case 'amount_type':
+          cmp = (amountTypeLabels[a.amount_type] || a.amount_type).localeCompare(
+            amountTypeLabels[b.amount_type] || b.amount_type, 'he'
+          );
+          break;
+        case 'notes':
+          cmp = (a.notes || '').localeCompare(b.notes || '', 'he');
+          break;
       }
       return sortDirection === 'asc' ? cmp : -cmp;
     });
 
     return result;
-  }, [expenses, searchTerm, filterCategory, filterFrequency, filterAmountType, filterExpenseType, filterPaymentMethod, filterCreditCard, sortField, sortDirection, categories]);
+  }, [expenses, searchTerm, filterCategory, filterFrequency, filterAmountType, filterExpenseType, filterPaymentMethod, filterCreditCard, sortField, sortDirection, categories, creditCards, paymentMethodLabels, frequencyLabels, expenseTypeLabels, amountTypeLabels]);
 
-  const handleSort = (field: typeof sortField) => {
+  const handleSort = (field: ExpenseSortField) => {
     if (sortField === field) {
       setSortDirection((d) => d === 'asc' ? 'desc' : 'asc');
     } else {
@@ -178,9 +212,104 @@ export default function Expenses() {
     }
   };
 
-  const SortIcon = ({ field }: {field: typeof sortField;}) => {
+  const SortIcon = ({ field }: {field: ExpenseSortField;}) => {
     if (sortField !== field) return <ArrowUpDown className="w-3 h-3 opacity-50" />;
     return sortDirection === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" />;
+  };
+
+  // Column label mapping
+  const columnLabels: Record<string, string> = {
+    name: 'שם',
+    amount: 'סכום',
+    date: 'תאריך',
+    category: 'קטגוריה',
+    credit_card: 'כרטיס אשראי',
+    payment_method: 'אמצעי תשלום',
+    frequency: 'תדירות',
+    expense_type: 'סוג הוצאה',
+    amount_type: 'סוג סכום',
+    notes: 'הערות'
+  };
+
+  // Render cell content based on column key
+  const renderCell = (expense: Expense, key: string) => {
+    const category = categories.find((c) => c.id === expense.category_id);
+    switch (key) {
+      case 'name':
+        return (
+          <>
+            <p data-ev-id="ev_70fa7dca00" className="font-medium text-foreground">{expense.name}</p>
+            {expense.notes && visibleColumns.includes('notes') === false &&
+            <p data-ev-id="ev_2a454c5750" className="text-xs text-muted-foreground">{expense.notes}</p>
+            }
+            <p data-ev-id="ev_2a10ce47b1" className="text-sm text-muted-foreground md:hidden">
+              {new Date(expense.date).toLocaleDateString('he-IL')}
+            </p>
+          </>);
+
+      case 'amount':
+        return (
+          <span data-ev-id="ev_42ef7219dd" className={`font-semibold ${Number(expense.amount) < 0 ? 'text-green-600' : 'text-foreground'}`}>
+            {Number(expense.amount) < 0 ? 'זיכוי ' : ''}₪{Math.abs(Number(expense.amount)).toLocaleString()}
+          </span>);
+
+      case 'date':
+        return (
+          <span data-ev-id="ev_91d9e66fb0" className="text-muted-foreground">
+            {new Date(expense.date).toLocaleDateString('he-IL')}
+          </span>);
+
+      case 'category':
+        return category ?
+        <span data-ev-id="ev_5376a583aa" className="text-foreground bg-red-600/10 text-sm px-2 py-1">
+            {category.name}
+          </span> :
+
+        <span data-ev-id="ev_ab7a01c934" className="text-muted-foreground text-sm">ללא</span>;
+
+      case 'credit_card':{
+          const card = creditCards.find((c) => c.id === expense.credit_card_id);
+          return card ?
+          <span data-ev-id="ev_0161ccd598" className="text-foreground text-sm">
+            {card.name}{card.last_four_digits && ` (${card.last_four_digits})`}
+          </span> :
+
+          <span data-ev-id="ev_c52a79cde6" className="text-muted-foreground text-sm">-</span>;
+
+        }
+      case 'payment_method':
+        return (
+          <span data-ev-id="ev_d3e0e3aed5" className="text-foreground text-sm">
+            {paymentMethodLabels[expense.payment_method] || expense.payment_method}
+          </span>);
+
+      case 'frequency':
+        return (
+          <span data-ev-id="ev_b95f4f461b" className="text-foreground text-sm">
+            {frequencyLabels[expense.frequency] || expense.frequency}
+          </span>);
+
+      case 'expense_type':
+        return (
+          <span data-ev-id="ev_6b8c99dc8c" className="text-foreground text-sm">
+            {expenseTypeLabels[expense.expense_type] || expense.expense_type}
+          </span>);
+
+      case 'amount_type':
+        return (
+          <span data-ev-id="ev_6d6b03dab4" className="text-foreground text-sm">
+            {amountTypeLabels[expense.amount_type] || expense.amount_type}
+          </span>);
+
+      case 'notes':
+        return (
+          <span data-ev-id="ev_f678ff2952" className="text-muted-foreground text-sm">
+            {expense.notes || '-'}
+          </span>);
+
+      default:
+        return null;
+    }
   };
 
   const totalAmount = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -216,7 +345,7 @@ export default function Expenses() {
     if (!newExpenseName.trim()) return;
 
     console.log('Looking for rule match:', newExpenseName.trim().toLowerCase());
-    console.log('Available rules:', expenseRules.map(r => r.expense_name));
+    console.log('Available rules:', expenseRules.map((r) => r.expense_name));
 
     // Check if there's a matching rule
     const matchingRule = expenseRules.find(
@@ -774,12 +903,12 @@ export default function Expenses() {
           </Card> :
 
         <Card variant="outlined" className="p-0 overflow-hidden">
-            <div data-ev-id="ev_65b8747e1f" className="overflow-x-auto">
-              <table data-ev-id="ev_81bf14beef" className="w-full">
-                <thead data-ev-id="ev_5ca81d3492" className="bg-muted">
-                  <tr data-ev-id="ev_17a7afa8ec">
-                    <th data-ev-id="ev_6794df7b21" className="p-3 w-10">
-                      <button data-ev-id="ev_45a8eddcb7" onClick={toggleSelectAll} className="p-1">
+            <div data-ev-id="ev_41565faba6" className="overflow-x-auto">
+              <table data-ev-id="ev_51dc7beda9" className="w-full">
+                <thead data-ev-id="ev_86112514c1" className="bg-muted">
+                  <tr data-ev-id="ev_dbd9b786af">
+                    <th data-ev-id="ev_7a687cbdb8" className="p-3 w-10">
+                      <button data-ev-id="ev_bb8e1eeeea" onClick={toggleSelectAll} className="p-1">
                         {selectedIds.size === filteredExpenses.length && filteredExpenses.length > 0 ?
                       <CheckSquare className="w-5 h-5 text-primary" /> :
 
@@ -787,40 +916,31 @@ export default function Expenses() {
                       }
                       </button>
                     </th>
-                    <th data-ev-id="ev_a964efcd79" className="text-right p-3 text-sm font-medium text-muted-foreground">
-                        <button data-ev-id="ev_fc4e083df8" onClick={() => handleSort('name')} className="flex items-center gap-1 hover:text-foreground">
-                          שם <SortIcon field="name" />
+                    {visibleColumns.map((col, idx) =>
+                  <th data-ev-id="ev_99d7f6c217"
+                  key={col}
+                  className={`text-right p-3 text-sm font-medium text-muted-foreground ${
+                  idx >= 2 ? 'hidden md:table-cell' : ''}`
+                  }>
+
+                        <button data-ev-id="ev_6a72a7a907"
+                    onClick={() => handleSort(col as ExpenseSortField)}
+                    className="flex items-center gap-1 hover:text-foreground">
+
+                          {columnLabels[col]} <SortIcon field={col as ExpenseSortField} />
                         </button>
                       </th>
-                    <th data-ev-id="ev_02ddcff849" className="text-right p-3 text-sm font-medium text-muted-foreground">
-                        <button data-ev-id="ev_0c5f94b71c" onClick={() => handleSort('amount')} className="flex items-center gap-1 hover:text-foreground">
-                          סכום <SortIcon field="amount" />
-                        </button>
-                      </th>
-                    <th data-ev-id="ev_61c0ba63c8" className="text-right p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                        <button data-ev-id="ev_417ac0c1d4" onClick={() => handleSort('date')} className="flex items-center gap-1 hover:text-foreground">
-                          תאריך <SortIcon field="date" />
-                        </button>
-                      </th>
-                    <th data-ev-id="ev_bf7ea1c473" className="text-right p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                        <button data-ev-id="ev_2542b6b0bf" onClick={() => handleSort('category')} className="flex items-center gap-1 hover:text-foreground">
-                          קטגוריה <SortIcon field="category" />
-                        </button>
-                      </th>
-                    <th data-ev-id="ev_65447dea33" className="text-right p-3 text-sm font-medium text-muted-foreground hidden lg:table-cell">
-                        כרטיס אשראי
-                      </th>
-                    <th data-ev-id="ev_9360806441" className="p-3"></th>
+                  )}
+                    <th data-ev-id="ev_0511020def" className="p-3"></th>
                   </tr>
                 </thead>
-                <tbody data-ev-id="ev_e8e04f9b3c" className="divide-y divide-border">
+                <tbody data-ev-id="ev_e20306a798" className="divide-y divide-border">
                   {filteredExpenses.map((expense) => {
-                  const category = categories.find((c) => c.id === expense.category_id);
                   const isSelected = selectedIds.has(expense.id);
                   return (
-                    <tr data-ev-id="ev_1c13a5b817" key={expense.id} className={`hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}>
-                        <td data-ev-id="ev_940848b7b2" className="p-3">
-                          <button data-ev-id="ev_cad2fb3d69" onClick={() => toggleSelect(expense.id)} className="p-1">
+                    <tr data-ev-id="ev_50f0dffc2f" key={expense.id} className={`hover:bg-muted/50 ${isSelected ? 'bg-primary/5' : ''}`}>
+                        <td data-ev-id="ev_4ef2a8400d" className="p-3">
+                          <button data-ev-id="ev_c45609d61b" onClick={() => toggleSelect(expense.id)} className="p-1">
                             {isSelected ?
                           <CheckSquare className="w-5 h-5 text-primary" /> :
 
@@ -828,47 +948,25 @@ export default function Expenses() {
                           }
                           </button>
                         </td>
-                        <td data-ev-id="ev_73d73c49d0" className="p-3">
-                          <p data-ev-id="ev_33b877ba92" className="font-medium text-foreground">{expense.name}</p>
-                          {expense.notes && <p data-ev-id="ev_bec6ce989b" className="text-xs text-muted-foreground">{expense.notes}</p>}
-                          <p data-ev-id="ev_5de2dfe561" className="text-sm text-muted-foreground md:hidden">
-                            {new Date(expense.date).toLocaleDateString('he-IL')}
-                          </p>
-                        </td>
-                        <td data-ev-id="ev_c6da8ba04b" className={`p-3 font-semibold ${Number(expense.amount) < 0 ? 'text-green-600' : 'text-foreground'}`}>
-                          {Number(expense.amount) < 0 ? 'זיכוי ' : ''}₪{Math.abs(Number(expense.amount)).toLocaleString()}
-                        </td>
-                        <td data-ev-id="ev_14fd00d11f" className="p-3 text-muted-foreground hidden md:table-cell">
-                          {new Date(expense.date).toLocaleDateString('he-IL')}
-                        </td>
-                        <td data-ev-id="ev_829a1cc4b1" className="p-3 hidden md:table-cell">
-                          {category ?
-                        <span data-ev-id="ev_c4dd470629" className="text-foreground bg-red-600/10 text-sm px-2 py-1">
-                              {category.name}
-                            </span> :
+                        {visibleColumns.map((col, idx) =>
+                      <td data-ev-id="ev_80b493bd6c"
+                      key={col}
+                      className={`p-3 ${
+                      idx >= 2 ? 'hidden md:table-cell' : ''}`
+                      }>
 
-                        <span data-ev-id="ev_f51540d7df" className="text-muted-foreground text-sm">ללא</span>
-                        }
-                        </td>
-                        <td data-ev-id="ev_aa51529cd6" className="p-3 hidden lg:table-cell">
-                          {(() => {
-                          const card = creditCards.find((c) => c.id === expense.credit_card_id);
-                          return card ?
-                          <span data-ev-id="ev_ae543c577f" className="text-foreground text-sm">
-                                {card.name}{card.last_four_digits && ` (${card.last_four_digits})`}
-                              </span> :
-                          <span data-ev-id="ev_a84e6cb217" className="text-muted-foreground text-sm">-</span>;
-                        })()}
-                        </td>
-                        <td data-ev-id="ev_0fe5aed46d" className="p-3">
-                          <div data-ev-id="ev_81863bd38b" className="flex gap-2 justify-end">
-                            <button data-ev-id="ev_a9b1b733b7"
+                            {renderCell(expense, col)}
+                          </td>
+                      )}
+                        <td data-ev-id="ev_4c5d322ae0" className="p-3">
+                          <div data-ev-id="ev_ed1c936f02" className="flex gap-2 justify-end">
+                            <button data-ev-id="ev_005b65955a"
                           onClick={() => setEditingExpense(expense)}
                           className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
 
                               <Edit2 className="w-4 h-4" />
                             </button>
-                            <button data-ev-id="ev_757ec6d3d7"
+                            <button data-ev-id="ev_78a66e0ca1"
                           onClick={() => handleDelete(expense.id)}
                           className="p-2 hover:bg-red-50 rounded-lg text-muted-foreground hover:text-red-600">
 

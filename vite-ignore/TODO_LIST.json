@@ -15,7 +15,7 @@
       "files": [
         "migrations"
       ],
-      "status": "active"
+      "status": "complete"
     },
     {
       "id": 3,
@@ -24,7 +24,7 @@
         "src/types/index.ts",
         "src/contexts/HouseholdContext.tsx"
       ],
-      "status": "pending"
+      "status": "complete"
     },
     {
       "id": 4,
@@ -32,7 +32,7 @@
       "files": [
         "src/pages/Settings.tsx"
       ],
-      "status": "pending"
+      "status": "complete"
     },
     {
       "id": 5,
@@ -41,9 +41,9 @@
         "src/pages/Expenses.tsx",
         "src/pages/Incomes.tsx"
       ],
-      "status": "pending"
+      "status": "complete"
     }
   ],
   "createdAt": "2026-09-01T06:38:39.974Z",
-  "updatedAt": "2026-09-01T06:39:11.130Z"
+  "updatedAt": "2026-09-01T06:44:26.571Z"
 }
