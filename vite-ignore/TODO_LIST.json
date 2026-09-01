@@ -1,0 +1,49 @@
+{
+  "summary": "Fix income rules editing + Add display field settings",
+  "todos": [
+    {
+      "id": 1,
+      "description": "Fix IncomeRules.tsx - add payment_method and amount_type to inline edit",
+      "files": [
+        "src/pages/IncomeRules.tsx"
+      ],
+      "status": "complete"
+    },
+    {
+      "id": 2,
+      "description": "Create display_settings table migration",
+      "files": [
+        "migrations"
+      ],
+      "status": "active"
+    },
+    {
+      "id": 3,
+      "description": "Update types and context for display settings",
+      "files": [
+        "src/types/index.ts",
+        "src/contexts/HouseholdContext.tsx"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 4,
+      "description": "Add display settings UI in Settings.tsx",
+      "files": [
+        "src/pages/Settings.tsx"
+      ],
+      "status": "pending"
+    },
+    {
+      "id": 5,
+      "description": "Update Expenses.tsx and Incomes.tsx with dynamic columns + sorting",
+      "files": [
+        "src/pages/Expenses.tsx",
+        "src/pages/Incomes.tsx"
+      ],
+      "status": "pending"
+    }
+  ],
+  "createdAt": "2026-09-01T06:38:39.974Z",
+  "updatedAt": "2026-09-01T06:39:11.130Z"
+}

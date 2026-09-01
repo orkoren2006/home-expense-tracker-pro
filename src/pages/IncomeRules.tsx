@@ -555,6 +555,8 @@ export default function IncomeRules() {
                       <SortIcon field="frequency" />
                     </button>
                   </th>
+                  <th data-ev-id="ev_8fdb3f5b52" className="p-3 text-right font-semibold text-foreground hidden md:table-cell">אמצעי תשלום</th>
+                  <th data-ev-id="ev_ce1201019f" className="p-3 text-right font-semibold text-foreground hidden lg:table-cell">סוג סכום</th>
                   <th data-ev-id="ev_8fdb3f5b52" className="p-3 text-right font-semibold text-foreground">פעולות</th>
                 </tr>
               </thead>
@@ -621,6 +623,36 @@ export default function IncomeRules() {
 
                   <span data-ev-id="ev_b19ec2781d" className="text-muted-foreground">
                           {frequencyLabels[rule.frequency] || rule.frequency}
+                        </span>
+                  }
+                    </td>
+                    <td data-ev-id="ev_bfc071d498" className="p-3 hidden md:table-cell">
+                      {editingRule?.id === rule.id ?
+                  <Select
+                    value={editingRule.payment_method}
+                    onChange={(e) =>
+                    setEditingRule({ ...editingRule, payment_method: e.target.value as IncomePaymentMethod })
+                    }
+                    options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} /> :
+
+
+                  <span data-ev-id="ev_f96088bf45" className="text-muted-foreground">
+                          {paymentMethodLabels[rule.payment_method] || rule.payment_method}
+                        </span>
+                  }
+                    </td>
+                    <td data-ev-id="ev_5fc69d0dd5" className="p-3 hidden lg:table-cell">
+                      {editingRule?.id === rule.id ?
+                  <Select
+                    value={editingRule.amount_type}
+                    onChange={(e) =>
+                    setEditingRule({ ...editingRule, amount_type: e.target.value as AmountType })
+                    }
+                    options={Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))} /> :
+
+
+                  <span data-ev-id="ev_04f1671ee6" className="text-muted-foreground">
+                          {amountTypeLabels[rule.amount_type] || rule.amount_type}
                         </span>
                   }
                     </td>
