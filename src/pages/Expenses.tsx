@@ -313,6 +313,9 @@ export default function Expenses() {
   };
 
   const totalAmount = filteredExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+  const selectedAmount = filteredExpenses.
+  filter((e) => selectedIds.has(e.id)).
+  reduce((sum, e) => sum + Number(e.amount), 0);
   const hasActiveFilters = filterCategory || filterFrequency || filterAmountType || filterExpenseType || filterPaymentMethod || filterCreditCard || searchTerm;
 
   const clearFilters = () => {
@@ -569,8 +572,13 @@ export default function Expenses() {
         <div data-ev-id="ev_bfd95ab61e" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div data-ev-id="ev_f1749d2325">
             <h2 data-ev-id="ev_311855b28c" className="text-2xl font-bold text-foreground">רשימת הוצאות</h2>
-            <p data-ev-id="ev_5458157634" className="text-muted-foreground">
+            <p data-ev-id="ev_88e2756b85" className="text-muted-foreground">
               סה"כ: ₪{totalAmount.toLocaleString()} ({filteredExpenses.length} הוצאות)
+              {selectedIds.size > 0 &&
+              <span data-ev-id="ev_dffb4dfa49" className="mr-2 text-primary font-medium">
+                  | נבחר: ₪{Math.abs(selectedAmount).toLocaleString()} ({selectedIds.size})
+                </span>
+              }
             </p>
           </div>
           <div data-ev-id="ev_b448e6fe22" className="flex gap-2">

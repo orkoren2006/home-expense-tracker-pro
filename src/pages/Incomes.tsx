@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Filter, Edit2, Trash2, Download, Plus, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, Download, Plus, X, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -30,6 +30,14 @@ export default function Incomes() {
   const [filterFrequency, setFilterFrequency] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
+
+  // Bulk selection
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [showBulkEdit, setShowBulkEdit] = useState(false);
+  const [bulkFrequency, setBulkFrequency] = useState('');
+  const [bulkAmountType, setBulkAmountType] = useState('');
+  const [bulkSource, setBulkSource] = useState('');
+  const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
 
   // Sorting - all columns are sortable
   type IncomeSortField = 'name' | 'amount' | 'date' | 'source' | 'payment_method' | 'frequency' | 'amount_type' | 'notes';
@@ -241,7 +249,75 @@ export default function Incomes() {
   };
 
   const totalAmount = filteredIncomes.reduce((sum, e) => sum + Number(e.amount), 0);
+  const selectedAmount = filteredIncomes.
+  filter((e) => selectedIds.has(e.id)).
+  reduce((sum, e) => sum + Number(e.amount), 0);
   const hasActiveFilters = filterFrequency || filterSource || filterPaymentMethod || searchTerm;
+
+  // Bulk operations
+  const toggleSelectAll = () => {
+    if (selectedIds.size === filteredIncomes.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(filteredIncomes.map((e) => e.id)));
+    }
+  };
+
+  const toggleSelect = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      return next;
+    });
+  };
+
+  const handleBulkUpdate = async () => {
+    if (!supabase || selectedIds.size === 0) return;
+
+    setLoading(true);
+    const updates: Partial<Income> = {};
+    if (bulkFrequency) updates.frequency = bulkFrequency as Frequency;
+    if (bulkAmountType) updates.amount_type = bulkAmountType as AmountType;
+    if (bulkSource) updates.source = bulkSource as IncomeSource;
+    if (bulkPaymentMethod) updates.payment_method = bulkPaymentMethod as IncomePaymentMethod;
+
+    if (Object.keys(updates).length === 0) {
+      alert('בחר לפחות שדה אחד לעדכון');
+      setLoading(false);
+      return;
+    }
+
+    const { error } = await supabase.
+    from('incomes').
+    update(updates).
+    in('id', Array.from(selectedIds));
+
+    if (!error) {
+      await loadIncomes();
+      setSelectedIds(new Set());
+      setShowBulkEdit(false);
+      setBulkFrequency('');
+      setBulkAmountType('');
+      setBulkSource('');
+      setBulkPaymentMethod('');
+    }
+    setLoading(false);
+  };
+
+  const handleBulkDelete = async () => {
+    if (!supabase || selectedIds.size === 0) return;
+    if (!confirm(`בטוח שברצונך למחוק ${selectedIds.size} הכנסות?`)) return;
+
+    setLoading(true);
+    await supabase.from('incomes').delete().in('id', Array.from(selectedIds));
+    await loadIncomes();
+    setSelectedIds(new Set());
+    setLoading(false);
+  };
 
   const clearFilters = () => {
     setFilterFrequency('');
@@ -407,8 +483,13 @@ export default function Incomes() {
         <div data-ev-id="ev_4bd65f6b3c" className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div data-ev-id="ev_fa5853f4c3">
             <h2 data-ev-id="ev_c584076ed9" className="text-2xl font-bold text-foreground">רשימת הכנסות</h2>
-            <p data-ev-id="ev_82e86c3d2a" className="text-muted-foreground">
+            <p data-ev-id="ev_6bec6f3867" className="text-muted-foreground">
               סה"כ: ₪{totalAmount.toLocaleString()} ({filteredIncomes.length} הכנסות)
+              {selectedIds.size > 0 &&
+              <span data-ev-id="ev_bf951e3282" className="mr-2 text-green-600 font-medium">
+                  | נבחר: ₪{selectedAmount.toLocaleString()} ({selectedIds.size})
+                </span>
+              }
             </p>
           </div>
           <div data-ev-id="ev_3199ba68ce" className="flex gap-2">
@@ -605,6 +686,78 @@ export default function Incomes() {
           </div>
         </Card>
 
+        {/* Bulk actions */}
+        {selectedIds.size > 0 &&
+        <Card className="bg-green-500/5 border-green-500">
+            <div data-ev-id="ev_12bb6fad7d" className="flex flex-col gap-4">
+              <div data-ev-id="ev_8a6eaecbb8" className="flex items-center justify-between">
+                <span data-ev-id="ev_20cca7ecb8" className="font-medium text-foreground">
+                  נבחרו {selectedIds.size} הכנסות
+                </span>
+                <div data-ev-id="ev_d29fd8f2fd" className="flex gap-2">
+                  <Button variant="outline" onClick={() => setShowBulkEdit(!showBulkEdit)}>
+                    <Edit2 className="w-4 h-4" />
+                    עריכה מרובה
+                  </Button>
+                  <Button variant="outline" onClick={handleBulkDelete} className="text-red-600 hover:bg-red-50">
+                    <Trash2 className="w-4 h-4" />
+                    מחיקה
+                  </Button>
+                  <Button variant="outline" onClick={() => setSelectedIds(new Set())}>
+                    ביטול
+                  </Button>
+                </div>
+              </div>
+
+              {showBulkEdit &&
+            <div data-ev-id="ev_67b666fdf6" className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-border">
+                  <Select
+                label="מקור"
+                value={bulkSource}
+                onChange={(e) => setBulkSource(e.target.value)}
+                options={[
+                { value: '', label: 'ללא שינוי' },
+                ...Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({ value, label }))]
+                } />
+
+                  <Select
+                label="תדירות"
+                value={bulkFrequency}
+                onChange={(e) => setBulkFrequency(e.target.value)}
+                options={[
+                { value: '', label: 'ללא שינוי' },
+                ...Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))]
+                } />
+
+                  <Select
+                label="סוג סכום"
+                value={bulkAmountType}
+                onChange={(e) => setBulkAmountType(e.target.value)}
+                options={[
+                { value: '', label: 'ללא שינוי' },
+                ...Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label }))]
+                } />
+
+                  <Select
+                label="אמצעי תשלום"
+                value={bulkPaymentMethod}
+                onChange={(e) => setBulkPaymentMethod(e.target.value)}
+                options={[
+                { value: '', label: 'ללא שינוי' },
+                ...Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))]
+                } />
+
+                  <div data-ev-id="ev_0f1fbaf617" className="col-span-full">
+                    <Button onClick={handleBulkUpdate} disabled={loading}>
+                      עדכן הכנסות נבחרות
+                    </Button>
+                  </div>
+                </div>
+            }
+            </div>
+          </Card>
+        }
+
         {/* Incomes list */}
         {loading ?
         <Card className="text-center py-8">
@@ -615,18 +768,27 @@ export default function Incomes() {
               <p data-ev-id="ev_9562093b34" className="text-muted-foreground">אין הכנסות להצגה</p>
             </Card> :
         <Card variant="outlined" className="p-0 overflow-hidden">
-              <div data-ev-id="ev_8dbe40f43f" className="overflow-x-auto">
-                <table data-ev-id="ev_02214e90b7" className="w-full">
-                  <thead data-ev-id="ev_c9bf592ff0" className="bg-muted">
-                    <tr data-ev-id="ev_2ae19065b8">
+              <div data-ev-id="ev_8b563b96f8" className="overflow-x-auto">
+                <table data-ev-id="ev_5b53c40a2f" className="w-full">
+                  <thead data-ev-id="ev_246b79e3f1" className="bg-muted">
+                    <tr data-ev-id="ev_886f95cf75">
+                      <th data-ev-id="ev_944766ce6f" className="p-3 w-10">
+                        <button data-ev-id="ev_6b9be05dcc" onClick={toggleSelectAll} className="p-1">
+                          {selectedIds.size === filteredIncomes.length && filteredIncomes.length > 0 ?
+                      <CheckSquare className="w-5 h-5 text-primary" /> :
+
+                      <Square className="w-5 h-5 text-muted-foreground" />
+                      }
+                        </button>
+                      </th>
                       {visibleColumns.map((col, idx) =>
-                  <th data-ev-id="ev_a7a252d6d9"
+                  <th data-ev-id="ev_ec51d6a068"
                   key={col}
                   className={`text-right p-3 text-sm font-medium text-muted-foreground ${
                   idx >= 2 ? 'hidden md:table-cell' : ''}`
                   }>
 
-                          <button data-ev-id="ev_199d56ea78"
+                          <button data-ev-id="ev_5db6265ca0"
                     onClick={() => handleSort(col as IncomeSortField)}
                     className="flex items-center gap-1 hover:text-foreground">
 
@@ -634,40 +796,52 @@ export default function Incomes() {
                           </button>
                         </th>
                   )}
-                      <th data-ev-id="ev_d351dd01ab" className="p-3"></th>
+                      <th data-ev-id="ev_d14795a7fa" className="p-3"></th>
                     </tr>
                   </thead>
-                  <tbody data-ev-id="ev_4524f97de0" className="divide-y divide-border">
-                    {filteredIncomes.map((income) =>
-                <tr data-ev-id="ev_7d2660e885" key={income.id} className="hover:bg-muted/50">
-                        {visibleColumns.map((col, idx) =>
-                  <td data-ev-id="ev_05c6a6f27a"
-                  key={col}
-                  className={`p-3 ${
-                  idx >= 2 ? 'hidden md:table-cell' : ''}`
-                  }>
+                  <tbody data-ev-id="ev_f71a2c7e12" className="divide-y divide-border">
+                    {filteredIncomes.map((income) => {
+                  const isSelected = selectedIds.has(income.id);
+                  return (
+                    <tr data-ev-id="ev_0f40fe58b9" key={income.id} className={`hover:bg-muted/50 ${isSelected ? 'bg-green-500/5' : ''}`}>
+                          <td data-ev-id="ev_63a2fa8542" className="p-3">
+                            <button data-ev-id="ev_16382ad67b" onClick={() => toggleSelect(income.id)} className="p-1">
+                              {isSelected ?
+                          <CheckSquare className="w-5 h-5 text-primary" /> :
 
-                            {renderCell(income, col)}
+                          <Square className="w-5 h-5 text-muted-foreground" />
+                          }
+                            </button>
                           </td>
-                  )}
-                        <td data-ev-id="ev_414f6ea079" className="p-3">
-                          <div data-ev-id="ev_691070c5d1" className="flex gap-2 justify-end">
-                            <button data-ev-id="ev_d5921d5d31"
-                      onClick={() => setEditingIncome(income)}
-                      className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
+                          {visibleColumns.map((col, idx) =>
+                      <td data-ev-id="ev_1a5b74d9d3"
+                      key={col}
+                      className={`p-3 ${
+                      idx >= 2 ? 'hidden md:table-cell' : ''}`
+                      }>
 
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button data-ev-id="ev_0a81cdee6d"
-                      onClick={() => handleDelete(income.id)}
-                      className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500">
+                              {renderCell(income, col)}
+                            </td>
+                      )}
+                          <td data-ev-id="ev_d49ace8991" className="p-3">
+                            <div data-ev-id="ev_7a17aa28a9" className="flex gap-2 justify-end">
+                              <button data-ev-id="ev_fafd41329e"
+                          onClick={() => setEditingIncome(income)}
+                          className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
 
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                )}
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button data-ev-id="ev_e399d1db0d"
+                          onClick={() => handleDelete(income.id)}
+                          className="p-2 hover:bg-red-500/10 rounded-lg text-muted-foreground hover:text-red-500">
+
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>);
+
+                })}
                   </tbody>
                 </table>
               </div>
