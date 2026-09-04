@@ -44,7 +44,8 @@ export default function ImportIncomes() {
   const [mapping, setMapping] = useState<IncomeColumnMapping>({
     name: '',
     amount: '',
-    date: ''
+    date: '',
+    notes: ''
   });
 
   // Classification state
@@ -167,11 +168,11 @@ export default function ImportIncomes() {
     }
 
     const str = String(value).trim();
-    
+
     // Try DD/MM/YYYY or DD-MM-YYYY (Israeli format)
     const slashParts = str.split('/');
     const dashParts = str.split('-');
-    
+
     if (slashParts.length === 3) {
       const [day, month, year] = slashParts.map((p) => parseInt(p, 10));
       if (day && month && year && day <= 31 && month <= 12) {
@@ -179,7 +180,7 @@ export default function ImportIncomes() {
         return `${fullYear}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
     }
-    
+
     // Check if it's already YYYY-MM-DD format
     if (dashParts.length === 3 && dashParts[0].length === 4) {
       const [year, month, day] = dashParts.map((p) => parseInt(p, 10));
@@ -187,7 +188,7 @@ export default function ImportIncomes() {
         return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
       }
     }
-    
+
     // Try DD-MM-YYYY format
     if (dashParts.length === 3 && dashParts[2].length === 4) {
       const [day, month, year] = dashParts.map((p) => parseInt(p, 10));
@@ -225,6 +226,7 @@ export default function ImportIncomes() {
       name: String(row[mapping.name] || '').trim(),
       amount: parseAmount(row[mapping.amount]),
       date: parseDate(row[mapping.date]),
+      notes: mapping.notes && row[mapping.notes] ? String(row[mapping.notes]).trim() : undefined,
       originalRow: row
     })).filter((inc) => inc.name && inc.amount > 0);
 
@@ -325,6 +327,7 @@ export default function ImportIncomes() {
       amount_type: inc.amount_type,
       payment_method: inc.payment_method,
       source: inc.source,
+      notes: inc.notes || null,
       import_batch_id: batchId
     }));
 
@@ -438,8 +441,16 @@ export default function ImportIncomes() {
               ...columns.map((c) => ({ value: c, label: c }))]
               } />
 
+              <Select
+              label="הערות - אופציונלי"
+              value={mapping.notes || ''}
+              onChange={(e) => setMapping((m) => ({ ...m, notes: e.target.value }))}
+              options={[
+              { value: '', label: 'לא נבחר' },
+              ...columns.map((c) => ({ value: c, label: c }))]
+              } />
 
-              <div data-ev-id="ev_428739f814" className="flex gap-3 mt-4">
+              <div data-ev-id="ev_fd68f24a67" className="flex gap-3 mt-4">
                 <Button onClick={handleMappingSubmit}>המשך</Button>
                 <Button variant="outline" onClick={resetImport}>
                   ביטול

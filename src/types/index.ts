@@ -122,6 +122,7 @@ export interface ParsedExpense {
   amount: number;
   date: string;
   credit_card_last_four?: string;
+  notes?: string;
   originalRow: Record<string, unknown>;
 }
 
@@ -129,6 +130,7 @@ export interface ParsedIncome {
   name: string;
   amount: number;
   date: string;
+  notes?: string;
   originalRow: Record<string, unknown>;
 }
 
@@ -137,12 +139,14 @@ export interface ColumnMapping {
   amount: string;
   date: string;
   credit_card?: string;
+  notes?: string;
 }
 
 export interface IncomeColumnMapping {
   name: string;
   amount: string;
   date: string;
+  notes?: string;
 }
 
 export interface ClassificationOption {

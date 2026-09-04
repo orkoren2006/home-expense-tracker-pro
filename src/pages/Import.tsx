@@ -46,7 +46,8 @@ export default function Import() {
     name: '',
     amount: '',
     date: '',
-    credit_card: ''
+    credit_card: '',
+    notes: ''
   });
 
   // Classification state - SEPARATED into auto and manual
@@ -274,7 +275,7 @@ export default function Import() {
 
     // Create billing_month string
     const billingMonth = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}`;
-    
+
     const toSave = expenseList.map((exp) => {
       // Match credit card by last 4 digits if available
       let creditCardId: string | null = null;
@@ -286,7 +287,7 @@ export default function Import() {
           creditCardId = matchedCard.id;
         }
       }
-      
+
       return {
         household_id: household.id,
         name: exp.name,
@@ -299,6 +300,7 @@ export default function Import() {
         expense_type: exp.expense_type,
         payment_method: exp.payment_method,
         credit_card_id: creditCardId,
+        notes: exp.notes || null,
         import_batch_id: batchId
       };
     });
@@ -428,7 +430,16 @@ export default function Import() {
               ...columns.map((c) => ({ value: c, label: c }))]
               } />
 
-              <div data-ev-id="ev_bd324d21f6" className="flex gap-3 mt-4">
+              <Select
+              label="הערות - אופציונלי"
+              value={mapping.notes || ''}
+              onChange={(e) => setMapping((m) => ({ ...m, notes: e.target.value }))}
+              options={[
+              { value: '', label: 'לא נבחר' },
+              ...columns.map((c) => ({ value: c, label: c }))]
+              } />
+
+              <div data-ev-id="ev_b3498f35c2" className="flex gap-3 mt-4">
                 <Button onClick={handleMappingSubmit}>המשך</Button>
                 <Button variant="outline" onClick={resetImport}>
                   ביטול
@@ -473,13 +484,13 @@ export default function Import() {
               options={(() => {
                 const currentYear = new Date().getFullYear();
                 return [
-                  { value: String(currentYear - 1), label: String(currentYear - 1) },
-                  { value: String(currentYear), label: String(currentYear) },
-                  { value: String(currentYear + 1), label: String(currentYear + 1) },
-                  { value: String(currentYear + 2), label: String(currentYear + 2) },
-                ];
-              })()}
-              />
+                { value: String(currentYear - 1), label: String(currentYear - 1) },
+                { value: String(currentYear), label: String(currentYear) },
+                { value: String(currentYear + 1), label: String(currentYear + 1) },
+                { value: String(currentYear + 2), label: String(currentYear + 2) }];
+
+              })()} />
+
 
             </div>
             

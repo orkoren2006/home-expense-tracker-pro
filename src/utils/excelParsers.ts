@@ -122,6 +122,7 @@ export function parseWithMapping(
       amount: parseAmount(row[mapping.amount]),
       date: parseDate(row[mapping.date]),
       credit_card_last_four: mapping.credit_card ? parseCreditCardLastFour(row[mapping.credit_card]) : undefined,
+      notes: mapping.notes && row[mapping.notes] ? String(row[mapping.notes]).trim() : undefined,
       originalRow: row,
     }));
 }
