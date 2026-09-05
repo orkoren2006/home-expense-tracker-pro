@@ -1,5 +1,91 @@
 import * as XLSX from 'xlsx';
-import type { ParsedExpense, ColumnMapping } from '@/types';
+import type { ParsedExpense, ColumnMapping, IncomeColumnMapping } from '@/types';
+
+// Column name aliases for auto-detection (Hebrew and English)
+const EXPENSE_COLUMN_ALIASES: Record<keyof ColumnMapping, string[]> = {
+  name: ['שם', 'שם הוצאה', 'תיאור', 'פירוט', 'name', 'description', 'שם בית העסק', 'שם בית עסק'],
+  amount: ['סכום', 'סכום החיוב', 'סכום חיוב', 'amount', 'sum', 'total'],
+  date: ['תאריך', 'תאריך עסקה', 'תאריך חיוב', 'date', 'transaction_date'],
+  credit_card: ['כרטיס', 'כרטיס אשראי', 'מספר כרטיס', '4 ספרות', 'credit_card', 'card'],
+  notes: ['הערות', 'הערה', 'notes', 'note', 'comment', 'comments']
+};
+
+const INCOME_COLUMN_ALIASES: Record<keyof IncomeColumnMapping, string[]> = {
+  name: ['שם', 'שם הכנסה', 'תיאור', 'פירוט', 'name', 'description', 'מקור'],
+  amount: ['סכום', 'סכום הכנסה', 'amount', 'sum', 'total'],
+  date: ['תאריך', 'date', 'transaction_date'],
+  notes: ['הערות', 'הערה', 'notes', 'note', 'comment', 'comments']
+};
+
+const EXPENSE_RULE_COLUMN_ALIASES: Record<string, string[]> = {
+  expense_name: ['שם הוצאה', 'שם', 'name', 'expense_name', 'תיאור'],
+  category_name: ['קטגוריה', 'category', 'category_name'],
+  frequency: ['תדירות', 'frequency'],
+  amount_type: ['סוג סכום', 'amount_type'],
+  expense_type: ['סוג הוצאה', 'expense_type'],
+  payment_method: ['אמצעי תשלום', 'payment_method'],
+  credit_card: ['כרטיס', 'כרטיס אשראי', 'מספר כרטיס', 'credit_card', 'card'],
+  notes: ['הערות', 'הערה', 'notes', 'note']
+};
+
+// Helper function to auto-detect column mapping based on column names
+export function autoDetectExpenseMapping(columns: string[]): ColumnMapping {
+  const mapping: ColumnMapping = { name: '', amount: '', date: '', credit_card: '', notes: '' };
+  
+  for (const col of columns) {
+    const colLower = col.toLowerCase().trim();
+    
+    for (const [field, aliases] of Object.entries(EXPENSE_COLUMN_ALIASES)) {
+      if (aliases.some(alias => colLower === alias.toLowerCase() || colLower.includes(alias.toLowerCase()))) {
+        // Only set if not already set (first match wins)
+        if (!mapping[field as keyof ColumnMapping]) {
+          mapping[field as keyof ColumnMapping] = col;
+        }
+        break;
+      }
+    }
+  }
+  
+  return mapping;
+}
+
+export function autoDetectIncomeMapping(columns: string[]): IncomeColumnMapping {
+  const mapping: IncomeColumnMapping = { name: '', amount: '', date: '', notes: '' };
+  
+  for (const col of columns) {
+    const colLower = col.toLowerCase().trim();
+    
+    for (const [field, aliases] of Object.entries(INCOME_COLUMN_ALIASES)) {
+      if (aliases.some(alias => colLower === alias.toLowerCase() || colLower.includes(alias.toLowerCase()))) {
+        if (!mapping[field as keyof IncomeColumnMapping]) {
+          mapping[field as keyof IncomeColumnMapping] = col;
+        }
+        break;
+      }
+    }
+  }
+  
+  return mapping;
+}
+
+export function autoDetectRuleMapping(columns: string[]): Record<string, string> {
+  const mapping: Record<string, string> = {};
+  
+  for (const col of columns) {
+    const colLower = col.toLowerCase().trim();
+    
+    for (const [field, aliases] of Object.entries(EXPENSE_RULE_COLUMN_ALIASES)) {
+      if (aliases.some(alias => colLower === alias.toLowerCase() || colLower.includes(alias.toLowerCase()))) {
+        if (!mapping[field]) {
+          mapping[field] = col;
+        }
+        break;
+      }
+    }
+  }
+  
+  return mapping;
+}
 
 export type CreditCardProvider = 'isracard' | 'cal' | 'generic';
 
@@ -189,6 +275,8 @@ export async function parseRulesExcel(file: File): Promise<{
     amount_type?: string;
     expense_type?: string;
     payment_method?: string;
+    credit_card?: string;
+    notes?: string;
   }>;
   columns: string[];
 }> {
@@ -211,18 +299,23 @@ export async function parseRulesExcel(file: File): Promise<{
         
         const columns = Object.keys(rawData[0] || {});
         
-        // Map common column names
+        // Auto-detect column mapping
+        const colMapping = autoDetectRuleMapping(columns);
+        
+        // Map common column names using detected mapping
         const rules = rawData.map((row) => {
-          const name = row['שם הוצאה'] || row['שם'] || row['name'] || row['expense_name'];
+          const name = colMapping.expense_name ? row[colMapping.expense_name] : (row['שם הוצאה'] || row['שם'] || row['name'] || row['expense_name']);
           if (!name) return null;
           
           return {
             expense_name: String(name).trim(),
-            category_name: String(row['קטגוריה'] || row['category'] || '').trim() || undefined,
-            frequency: String(row['תדירות'] || row['frequency'] || '').trim() || undefined,
-            amount_type: String(row['סוג סכום'] || row['amount_type'] || '').trim() || undefined,
-            expense_type: String(row['סוג הוצאה'] || row['expense_type'] || '').trim() || undefined,
-            payment_method: String(row['אמצעי תשלום'] || row['payment_method'] || '').trim() || undefined,
+            category_name: String(colMapping.category_name ? row[colMapping.category_name] : (row['קטגוריה'] || row['category'] || '')).trim() || undefined,
+            frequency: String(colMapping.frequency ? row[colMapping.frequency] : (row['תדירות'] || row['frequency'] || '')).trim() || undefined,
+            amount_type: String(colMapping.amount_type ? row[colMapping.amount_type] : (row['סוג סכום'] || row['amount_type'] || '')).trim() || undefined,
+            expense_type: String(colMapping.expense_type ? row[colMapping.expense_type] : (row['סוג הוצאה'] || row['expense_type'] || '')).trim() || undefined,
+            payment_method: String(colMapping.payment_method ? row[colMapping.payment_method] : (row['אמצעי תשלום'] || row['payment_method'] || '')).trim() || undefined,
+            credit_card: String(colMapping.credit_card ? row[colMapping.credit_card] : (row['כרטיס'] || row['כרטיס אשראי'] || row['credit_card'] || '')).trim() || undefined,
+            notes: String(colMapping.notes ? row[colMapping.notes] : (row['הערות'] || row['notes'] || '')).trim() || undefined,
           };
         }).filter(Boolean) as Array<{
           expense_name: string;
@@ -231,6 +324,8 @@ export async function parseRulesExcel(file: File): Promise<{
           amount_type?: string;
           expense_type?: string;
           payment_method?: string;
+          credit_card?: string;
+          notes?: string;
         }>;
         
         resolve({ rules, columns });

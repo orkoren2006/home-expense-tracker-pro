@@ -1,49 +1,25 @@
 {
-  "summary": "Fix income rules editing + Add display field settings",
+  "summary": "זיהוי אוטומטי של מיפוי עמודות + הוספת כרטיס אשראי לכללי הוצאות",
   "todos": [
     {
       "id": 1,
-      "description": "Fix IncomeRules.tsx - add payment_method and amount_type to inline edit",
-      "files": [
-        "src/pages/IncomeRules.tsx"
-      ],
+      "description": "Types + Utils: הוספת credit_card_id לExpenseRule, פונקציית זיהוי אוטומטי",
+      "files": [],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "Create display_settings table migration",
-      "files": [
-        "migrations"
-      ],
+      "description": "Import.tsx + ImportIncomes.tsx: זיהוי אוטומטי של מיפוי עמודות",
+      "files": [],
       "status": "complete"
     },
     {
       "id": 3,
-      "description": "Update types and context for display settings",
-      "files": [
-        "src/types/index.ts",
-        "src/contexts/HouseholdContext.tsx"
-      ],
-      "status": "complete"
-    },
-    {
-      "id": 4,
-      "description": "Add display settings UI in Settings.tsx",
-      "files": [
-        "src/pages/Settings.tsx"
-      ],
-      "status": "complete"
-    },
-    {
-      "id": 5,
-      "description": "Update Expenses.tsx and Incomes.tsx with dynamic columns + sorting",
-      "files": [
-        "src/pages/Expenses.tsx",
-        "src/pages/Incomes.tsx"
-      ],
-      "status": "complete"
+      "description": "Rules.tsx + Settings.tsx: הוספת כרטיס אשראי לכללי הוצאות",
+      "files": [],
+      "status": "active"
     }
   ],
-  "createdAt": "2026-09-01T06:38:39.974Z",
-  "updatedAt": "2026-09-01T06:44:26.571Z"
+  "createdAt": "2026-09-05T06:08:11.491Z",
+  "updatedAt": "2026-09-05T06:09:29.212Z"
 }

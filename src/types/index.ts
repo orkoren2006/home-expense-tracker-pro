@@ -30,6 +30,7 @@ export interface ExpenseRule {
   amount_type: AmountType;
   expense_type: ExpenseType;
   payment_method: PaymentMethod;
+  credit_card_id?: string;
   notes?: string;
 }
 
@@ -59,6 +60,7 @@ export interface DefaultExpenseSettings {
   amount_type: AmountType;
   expense_type: ExpenseType;
   payment_method: PaymentMethod;
+  credit_card_id?: string;
 }
 
 export interface DefaultIncomeSettings {

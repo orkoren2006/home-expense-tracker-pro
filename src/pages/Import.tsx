@@ -7,7 +7,7 @@ import { Select } from '@/components/ui/Select';
 import { ExpenseClassificationModal } from '@/components/ExpenseClassificationModal';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
-import { parseExcelFile, parseWithMapping, type CreditCardProvider } from '@/utils/excelParsers';
+import { parseExcelFile, parseWithMapping, autoDetectExpenseMapping, type CreditCardProvider } from '@/utils/excelParsers';
 import type { ParsedExpense, ColumnMapping, Frequency, AmountType, ExpenseType, PaymentMethod } from '@/types';
 
 const PROVIDER_NAMES: Record<CreditCardProvider, string> = {
@@ -154,6 +154,9 @@ export default function Import() {
         setExpenses(result.expenses);
         setStep('month'); // Go to month selection first
       } else {
+        // Auto-detect column mapping based on column names
+        const detectedMapping = autoDetectExpenseMapping(result.columns);
+        setMapping(detectedMapping);
         setStep('mapping');
       }
     } catch (err) {

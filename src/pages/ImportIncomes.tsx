@@ -8,6 +8,7 @@ import { IncomeClassificationModal } from '@/components/IncomeClassificationModa
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
 import * as XLSX from 'xlsx';
+import { autoDetectIncomeMapping } from '@/utils/excelParsers';
 import type {
   ParsedIncome,
   IncomeColumnMapping,
@@ -143,6 +144,9 @@ export default function ImportIncomes() {
       const cols = Object.keys(data[0]);
       setColumns(cols);
       setRawData(data);
+      // Auto-detect column mapping based on column names
+      const detectedMapping = autoDetectIncomeMapping(cols);
+      setMapping(detectedMapping);
       setStep('mapping');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'שגיאה בקריאת הקובץ');

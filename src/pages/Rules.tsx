@@ -52,6 +52,7 @@ export default function Rules() {
   const [newRuleAmountType, setNewRuleAmountType] = useState<AmountType>('variable');
   const [newRuleExpenseType, setNewRuleExpenseType] = useState<ExpenseType>('optional');
   const [newRulePaymentMethod, setNewRulePaymentMethod] = useState<PaymentMethod>('credit');
+  const [newRuleCreditCardId, setNewRuleCreditCardId] = useState('');
   const [newRuleNotes, setNewRuleNotes] = useState('');
 
   // Build label maps including custom options
@@ -190,6 +191,7 @@ export default function Rules() {
       amount_type: newRuleAmountType,
       expense_type: newRuleExpenseType,
       payment_method: newRulePaymentMethod,
+      credit_card_id: newRuleCreditCardId || null,
       notes: newRuleNotes.trim() || null
     });
 
@@ -200,6 +202,7 @@ export default function Rules() {
       setNewRuleAmountType('variable');
       setNewRuleExpenseType('optional');
       setNewRulePaymentMethod('credit');
+      setNewRuleCreditCardId('');
       setNewRuleNotes('');
       setShowAddForm(false);
       await loadRules();
@@ -219,6 +222,7 @@ export default function Rules() {
       amount_type: rule.amount_type,
       expense_type: rule.expense_type,
       payment_method: rule.payment_method,
+      credit_card_id: rule.credit_card_id || null,
       notes: rule.notes || null
     }).
     eq('id', rule.id);
@@ -424,6 +428,14 @@ export default function Rules() {
               onChange={(e) => setNewRulePaymentMethod(e.target.value as PaymentMethod)}
               options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
 
+              <Select
+              label="כרטיס אשראי"
+              value={newRuleCreditCardId}
+              onChange={(e) => setNewRuleCreditCardId(e.target.value)}
+              options={[
+              { value: '', label: 'לא נבחר' },
+              ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
+              } />
               
               <Input
               label="הערות"
@@ -764,6 +776,14 @@ export default function Rules() {
                 onChange={(e) => setEditingRule({ ...editingRule, payment_method: e.target.value as PaymentMethod })}
                 options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
 
+                <Select
+                label="כרטיס אשראי"
+                value={editingRule.credit_card_id || ''}
+                onChange={(e) => setEditingRule({ ...editingRule, credit_card_id: e.target.value })}
+                options={[
+                { value: '', label: 'לא נבחר' },
+                ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
+                } />
                 
                 <Input
                 label="הערות"
