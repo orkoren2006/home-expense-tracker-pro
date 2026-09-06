@@ -993,8 +993,8 @@ export default function Expenses() {
 
         {/* Edit modal */}
         {editingExpense &&
-        <div data-ev-id="ev_1543ea6a6a" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div data-ev-id="ev_1543ea6a6a" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setEditingExpense(null)}>
+            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <h3 data-ev-id="ev_9a2ab19cca" className="text-lg font-bold text-foreground mb-4">עריכת הוצאה</h3>
               <div data-ev-id="ev_cb89f81d80" className="flex flex-col gap-4">
                 <Input

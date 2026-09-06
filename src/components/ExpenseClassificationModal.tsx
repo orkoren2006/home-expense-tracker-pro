@@ -75,8 +75,8 @@ export function ExpenseClassificationModal({
   };
 
   return (
-    <div data-ev-id="ev_5781922e87" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" dir="rtl">
-      <div data-ev-id="ev_290c82fffb" className="bg-card rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div data-ev-id="ev_5781922e87" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" dir="rtl" onClick={onClose}>
+      <div data-ev-id="ev_290c82fffb" className="bg-card rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
         <div data-ev-id="ev_43b621a3b4" className="sticky top-0 bg-card border-b border-border p-4 flex items-center justify-between">
           <h2 data-ev-id="ev_4fcd641d55" className="text-lg font-bold text-foreground">סיווג הוצאה</h2>
           <button data-ev-id="ev_4479f63475" onClick={onClose} className="p-1 hover:bg-muted rounded-lg">

@@ -734,8 +734,8 @@ export default function Rules() {
 
         {/* Edit modal */}
         {editingRule &&
-        <div data-ev-id="ev_00aa1f3796" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
-            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div data-ev-id="ev_00aa1f3796" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" onClick={() => setEditingRule(null)}>
+            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <h3 data-ev-id="ev_b1449b2e88" className="text-lg font-bold text-foreground mb-4">עריכת כלל</h3>
               <div data-ev-id="ev_37b6cf4646" className="flex flex-col gap-4">
                 <Input

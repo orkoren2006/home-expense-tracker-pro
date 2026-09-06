@@ -850,8 +850,8 @@ export default function Incomes() {
 
         {/* Edit modal */}
         {editingIncome &&
-        <div data-ev-id="ev_d591afb800" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" dir="rtl">
-            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div data-ev-id="ev_d591afb800" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50" dir="rtl" onClick={() => setEditingIncome(null)}>
+            <Card className="w-full max-w-lg max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div data-ev-id="ev_adb75226ee" className="flex items-center justify-between mb-4">
                 <h3 data-ev-id="ev_3667cd9c03" className="text-lg font-semibold text-foreground">עריכת הכנסה</h3>
                 <button data-ev-id="ev_e591162c58" onClick={() => setEditingIncome(null)} className="p-1 hover:bg-muted rounded-lg">
