@@ -70,6 +70,9 @@ export default function Settings() {
   const [defaultPaymentMethod, setDefaultPaymentMethod] = useState<PaymentMethod>(
     defaultSettings?.payment_method || 'credit'
   );
+  const [defaultCreditCardId, setDefaultCreditCardId] = useState(
+    defaultSettings?.credit_card_id || ''
+  );
 
   // Default income settings form
   const [defaultIncomeFrequency, setDefaultIncomeFrequency] = useState<Frequency>(
@@ -109,6 +112,7 @@ export default function Settings() {
       setDefaultAmountType(defaultSettings.amount_type);
       setDefaultExpenseType(defaultSettings.expense_type);
       setDefaultPaymentMethod(defaultSettings.payment_method);
+      setDefaultCreditCardId(defaultSettings.credit_card_id || '');
     }
   }, [defaultSettings]);
 
@@ -233,7 +237,8 @@ export default function Settings() {
         frequency: defaultFrequency,
         amount_type: defaultAmountType,
         expense_type: defaultExpenseType,
-        payment_method: defaultPaymentMethod
+        payment_method: defaultPaymentMethod,
+        credit_card_id: defaultCreditCardId || null
       },
       { onConflict: 'household_id' }
     );
@@ -880,6 +885,14 @@ export default function Settings() {
                   label
                 }))} />
 
+              <Select
+                label="כרטיס אשראי"
+                value={defaultCreditCardId}
+                onChange={(e) => setDefaultCreditCardId(e.target.value)}
+                options={[
+                { value: '', label: 'לא נבחר' },
+                ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
+                } />
 
               <Button onClick={handleSaveDefaults} disabled={loading} className="self-start mt-2">
                 שמור ברירות מחדל
