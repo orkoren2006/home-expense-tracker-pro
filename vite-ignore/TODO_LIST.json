@@ -1,25 +1,25 @@
 {
-  "summary": "זיהוי אוטומטי של מיפוי עמודות + הוספת כרטיס אשראי לכללי הוצאות",
+  "summary": "הוספת שדות חסרים בעריכה מרובה + timestamps",
   "todos": [
     {
       "id": 1,
-      "description": "Types + Utils: הוספת credit_card_id לExpenseRule, פונקציית זיהוי אוטומטי",
+      "description": "עדכון types + מיגרציה להוספת created_at ל-income_rules",
       "files": [],
-      "status": "complete"
+      "status": "active"
     },
     {
       "id": 2,
-      "description": "Import.tsx + ImportIncomes.tsx: זיהוי אוטומטי של מיפוי עמודות",
+      "description": "עריכה מרובה הוצאות: הערות, חודש חיוב, כרטיס",
       "files": [],
-      "status": "complete"
+      "status": "pending"
     },
     {
       "id": 3,
-      "description": "Rules.tsx + Settings.tsx: הוספת כרטיס אשראי לכללי הוצאות",
+      "description": "עריכה מרובה הכנסות + עריכת הוצאה בודדת + הצגת timestamp",
       "files": [],
-      "status": "complete"
+      "status": "pending"
     }
   ],
-  "createdAt": "2026-09-05T06:08:11.491Z",
-  "updatedAt": "2026-09-06T07:10:30.800Z"
+  "createdAt": "2026-09-07T08:18:45.562Z",
+  "updatedAt": "2026-09-07T08:18:45.562Z"
 }

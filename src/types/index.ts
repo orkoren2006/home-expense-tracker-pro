@@ -32,6 +32,7 @@ export interface ExpenseRule {
   payment_method: PaymentMethod;
   credit_card_id?: string;
   notes?: string;
+  created_at?: string;
 }
 
 export interface Expense {
@@ -50,6 +51,7 @@ export interface Expense {
   notes?: string;
   import_batch_id?: string;
   created_by?: string;
+  created_at?: string;
 }
 
 export interface DefaultExpenseSettings {
@@ -201,6 +203,7 @@ export interface Income {
   source: IncomeSource;
   notes?: string;
   import_batch_id?: string;
+  created_at?: string;
 }
 
 export interface IncomeRule {
@@ -212,6 +215,7 @@ export interface IncomeRule {
   payment_method: IncomePaymentMethod;
   source: IncomeSource;
   notes?: string;
+  created_at?: string;
 }
 
 export const INCOME_PAYMENT_METHOD_LABELS: Record<IncomePaymentMethod, string> = {
