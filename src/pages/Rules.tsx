@@ -339,7 +339,7 @@ export default function Rules() {
       const ws = XLSX.utils.json_to_sheet(exportData);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'כללי סיווג');
-      
+
       // Use Blob for sandbox compatibility
       const wbout = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
       const blob = new Blob([wbout], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
@@ -790,6 +790,13 @@ export default function Rules() {
                 placeholder="הערה או תיאור קצר"
                 value={editingRule.notes || ''}
                 onChange={(e) => setEditingRule({ ...editingRule, notes: e.target.value })} />
+
+                {editingRule.created_at &&
+              <p data-ev-id="ev_e74bcb74b2" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                  נוצר בתאריך {new Date(editingRule.created_at).toLocaleDateString('he-IL')} בשעה {new Date(editingRule.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              }
+
                 <div data-ev-id="ev_e7d6b312a4" className="flex gap-3 mt-4">
                   <Button onClick={() => handleUpdateRule(editingRule)}>שמור</Button>
                   <Button variant="outline" onClick={() => setEditingRule(null)}>ביטול</Button>

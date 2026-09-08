@@ -659,14 +659,21 @@ export default function IncomeRules() {
                     <td data-ev-id="ev_bcde58e63c" className="p-3">
                       <div data-ev-id="ev_232913c458" className="flex gap-2 justify-end">
                         {editingRule?.id === rule.id ?
-                    <>
-                            <Button size="sm" onClick={() => handleUpdateRule(editingRule)}>
-                              שמור
-                            </Button>
-                            <Button size="sm" variant="outline" onClick={() => setEditingRule(null)}>
-                              ביטול
-                            </Button>
-                          </> :
+                    <div data-ev-id="ev_b172c1fdf3" className="flex flex-col gap-1 items-end">
+                            <div data-ev-id="ev_c53d963e87" className="flex gap-2">
+                              <Button size="sm" onClick={() => handleUpdateRule(editingRule)}>
+                                שמור
+                              </Button>
+                              <Button size="sm" variant="outline" onClick={() => setEditingRule(null)}>
+                                ביטול
+                              </Button>
+                            </div>
+                            {rule.created_at &&
+                      <span data-ev-id="ev_a03d2895af" className="text-xs text-muted-foreground">
+                              נוצר: {new Date(rule.created_at).toLocaleDateString('he-IL')}
+                            </span>
+                      }
+                          </div> :
 
                     <>
                             <button data-ev-id="ev_ec1a17966d"

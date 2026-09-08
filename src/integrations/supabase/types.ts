@@ -458,6 +458,7 @@ export type Database = {
       income_rules: {
         Row: {
           amount_type: string
+          created_at: string
           frequency: string
           household_id: string
           id: string
@@ -468,6 +469,7 @@ export type Database = {
         }
         Insert: {
           amount_type?: string
+          created_at?: string
           frequency?: string
           household_id: string
           id?: string
@@ -478,6 +480,7 @@ export type Database = {
         }
         Update: {
           amount_type?: string
+          created_at?: string
           frequency?: string
           household_id?: string
           id?: string

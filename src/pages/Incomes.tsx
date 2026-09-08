@@ -38,6 +38,8 @@ export default function Incomes() {
   const [bulkAmountType, setBulkAmountType] = useState('');
   const [bulkSource, setBulkSource] = useState('');
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
+  const [bulkBillingMonth, setBulkBillingMonth] = useState('');
+  const [bulkNotes, setBulkNotes] = useState('');
 
   // Sorting - all columns are sortable
   type IncomeSortField = 'name' | 'amount' | 'date' | 'source' | 'payment_method' | 'frequency' | 'amount_type' | 'notes';
@@ -284,6 +286,8 @@ export default function Incomes() {
     if (bulkAmountType) updates.amount_type = bulkAmountType as AmountType;
     if (bulkSource) updates.source = bulkSource as IncomeSource;
     if (bulkPaymentMethod) updates.payment_method = bulkPaymentMethod as IncomePaymentMethod;
+    if (bulkBillingMonth) updates.billing_month = bulkBillingMonth;
+    if (bulkNotes) updates.notes = bulkNotes === '__clear__' ? null : bulkNotes;
 
     if (Object.keys(updates).length === 0) {
       alert('בחר לפחות שדה אחד לעדכון');
@@ -304,6 +308,8 @@ export default function Incomes() {
       setBulkAmountType('');
       setBulkSource('');
       setBulkPaymentMethod('');
+      setBulkBillingMonth('');
+      setBulkNotes('');
     }
     setLoading(false);
   };
@@ -747,6 +753,18 @@ export default function Incomes() {
                 ...Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))]
                 } />
 
+                  <Input
+                label="חודש הכנסה (YYYY-MM)"
+                placeholder="לדוגמא: 2025-07"
+                value={bulkBillingMonth}
+                onChange={(e) => setBulkBillingMonth(e.target.value)} />
+
+                  <Input
+                label="הערות"
+                placeholder="הערה חדשה לכל הנבחרים"
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)} />
+
                   <div data-ev-id="ev_0f1fbaf617" className="col-span-full">
                     <Button onClick={handleBulkUpdate} disabled={loading}>
                       עדכן הכנסות נבחרות
@@ -903,6 +921,13 @@ export default function Incomes() {
                 label="הערות"
                 value={editingIncome.notes || ''}
                 onChange={(e) => setEditingIncome({ ...editingIncome, notes: e.target.value })} />
+
+                {editingIncome.created_at &&
+              <p data-ev-id="ev_fa0ea188d8" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                  נוצר בתאריך {new Date(editingIncome.created_at).toLocaleDateString('he-IL')} בשעה {new Date(editingIncome.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              }
+
                 <div data-ev-id="ev_56ab8c25cf" className="flex gap-3">
                   <Button onClick={() => handleUpdateIncome(editingIncome)}>שמור</Button>
                   <Button variant="outline" onClick={() => setEditingIncome(null)}>ביטול</Button>

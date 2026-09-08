@@ -42,6 +42,9 @@ export default function Expenses() {
   const [bulkAmountType, setBulkAmountType] = useState('');
   const [bulkExpenseType, setBulkExpenseType] = useState('');
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
+  const [bulkCreditCardId, setBulkCreditCardId] = useState('');
+  const [bulkBillingMonth, setBulkBillingMonth] = useState('');
+  const [bulkNotes, setBulkNotes] = useState('');
 
   // Sorting - all columns are sortable
   type ExpenseSortField = 'name' | 'amount' | 'date' | 'category' | 'credit_card' | 'payment_method' | 'frequency' | 'expense_type' | 'amount_type' | 'notes';
@@ -469,6 +472,9 @@ export default function Expenses() {
     if (bulkAmountType) updates.amount_type = bulkAmountType as AmountType;
     if (bulkExpenseType) updates.expense_type = bulkExpenseType as ExpenseType;
     if (bulkPaymentMethod) updates.payment_method = bulkPaymentMethod as PaymentMethod;
+    if (bulkCreditCardId) updates.credit_card_id = bulkCreditCardId === '__none__' ? null : bulkCreditCardId;
+    if (bulkBillingMonth) updates.billing_month = bulkBillingMonth;
+    if (bulkNotes) updates.notes = bulkNotes === '__clear__' ? null : bulkNotes;
 
     if (Object.keys(updates).length === 0) {
       alert('בחר לפחות שדה אחד לעדכון');
@@ -490,6 +496,9 @@ export default function Expenses() {
       setBulkAmountType('');
       setBulkExpenseType('');
       setBulkPaymentMethod('');
+      setBulkCreditCardId('');
+      setBulkBillingMonth('');
+      setBulkNotes('');
     }
     setLoading(false);
   };
@@ -889,6 +898,30 @@ export default function Expenses() {
                 ...Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))]
                 } />
 
+                  {creditCards.length > 0 &&
+              <Select
+                label="כרטיס אשראי"
+                value={bulkCreditCardId}
+                onChange={(e) => setBulkCreditCardId(e.target.value)}
+                options={[
+                { value: '', label: 'ללא שינוי' },
+                { value: '__none__', label: 'הסר כרטיס' },
+                ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
+                } />
+              }
+
+                  <Input
+                label="חודש חיוב (YYYY-MM)"
+                placeholder="לדוגמא: 2025-07"
+                value={bulkBillingMonth}
+                onChange={(e) => setBulkBillingMonth(e.target.value)} />
+
+                  <Input
+                label="הערות"
+                placeholder="הערה חדשה לכל הנבחרים"
+                value={bulkNotes}
+                onChange={(e) => setBulkNotes(e.target.value)} />
+
                   <div data-ev-id="ev_202a54d725" className="md:col-span-5 flex justify-end">
                     <Button onClick={handleBulkUpdate} disabled={loading}>
                       עדכן {selectedIds.size} הוצאות
@@ -1053,7 +1086,7 @@ export default function Expenses() {
                 onChange={(e) => setEditingExpense({ ...editingExpense, payment_method: e.target.value as PaymentMethod })}
                 options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
 
-                {editingExpense.payment_method === 'credit' && creditCards.length > 0 &&
+                {creditCards.length > 0 &&
               <Select
                 label="כרטיס אשראי"
                 value={editingExpense.credit_card_id || ''}
@@ -1072,6 +1105,12 @@ export default function Expenses() {
                 placeholder="הערה או תיאור קצר"
                 value={editingExpense.notes || ''}
                 onChange={(e) => setEditingExpense({ ...editingExpense, notes: e.target.value })} />
+
+                {editingExpense.created_at &&
+              <p data-ev-id="ev_b0788aa17f" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+                  נוצר בתאריך {new Date(editingExpense.created_at).toLocaleDateString('he-IL')} בשעה {new Date(editingExpense.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
+                </p>
+              }
 
                 <div data-ev-id="ev_7c50b53728" className="flex gap-3 mt-4">
                   <Button onClick={() => handleUpdateExpense(editingExpense)}>שמור</Button>
