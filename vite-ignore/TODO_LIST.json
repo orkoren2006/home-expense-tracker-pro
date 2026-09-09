@@ -1,25 +1,19 @@
 {
-  "summary": "הוספת שדות חסרים בעריכה מרובה + timestamps",
+  "summary": "תיקון 3 בעיות: סיווגים, פילטר ברירת מחדל, עריכת שם מרובה",
   "todos": [
     {
       "id": 1,
-      "description": "עדכון types + מיגרציה להוספת created_at ל-income_rules",
+      "description": "תיקון סיווגים מותאמים להכנסות + פילטר ברירת מחדל לחודש נוכחי",
       "files": [],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "עריכה מרובה הוצאות: הערות, חודש חיוב, כרטיס",
-      "files": [],
-      "status": "complete"
-    },
-    {
-      "id": 3,
-      "description": "עריכה מרובה הכנסות + עריכת הוצאה בודדת + הצגת timestamp",
+      "description": "עריכה מרובה - הוספת שדה שם בהוצאות והכנסות",
       "files": [],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-07T08:18:45.562Z",
-  "updatedAt": "2026-09-08T04:43:23.744Z"
+  "createdAt": "2026-09-09T06:16:01.233Z",
+  "updatedAt": "2026-09-09T06:19:57.570Z"
 }

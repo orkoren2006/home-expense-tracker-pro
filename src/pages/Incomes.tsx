@@ -18,15 +18,18 @@ import {
 '@/types';
 
 export default function Incomes() {
-  const { household, incomeRules, defaultIncomeSettings, displaySettings, refreshData } = useHousehold();
+  const { household, incomeRules, defaultIncomeSettings, displaySettings, classificationOptions, refreshData } = useHousehold();
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(false);
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
 
-  // Filters
-  const [filterMonth, setFilterMonth] = useState('');
+  // Filters - default to current month
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [filterFrequency, setFilterFrequency] = useState('');
   const [filterSource, setFilterSource] = useState('');
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
@@ -40,6 +43,7 @@ export default function Incomes() {
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
   const [bulkBillingMonth, setBulkBillingMonth] = useState('');
   const [bulkNotes, setBulkNotes] = useState('');
+  const [bulkName, setBulkName] = useState('');
 
   // Sorting - all columns are sortable
   type IncomeSortField = 'name' | 'amount' | 'date' | 'source' | 'payment_method' | 'frequency' | 'amount_type' | 'notes';
@@ -48,6 +52,39 @@ export default function Incomes() {
 
   // Get visible columns from display settings or use defaults
   const visibleColumns = displaySettings?.income_columns || ['name', 'amount', 'date', 'source'];
+
+  // Build label maps including custom options
+  const sourceLabels = useMemo(() => {
+    const map: Record<string, string> = { ...INCOME_SOURCE_LABELS };
+    (classificationOptions ?? []).
+    filter((o) => o.option_type === 'income_source').
+    forEach((o) => {map[o.value] = o.label;});
+    return map;
+  }, [classificationOptions]);
+
+  const paymentMethodLabels = useMemo(() => {
+    const map: Record<string, string> = { ...INCOME_PAYMENT_METHOD_LABELS };
+    (classificationOptions ?? []).
+    filter((o) => o.option_type === 'income_payment_method').
+    forEach((o) => {map[o.value] = o.label;});
+    return map;
+  }, [classificationOptions]);
+
+  const frequencyLabels = useMemo(() => {
+    const map: Record<string, string> = { ...FREQUENCY_LABELS };
+    (classificationOptions ?? []).
+    filter((o) => o.option_type === 'frequency').
+    forEach((o) => {map[o.value] = o.label;});
+    return map;
+  }, [classificationOptions]);
+
+  const amountTypeLabels = useMemo(() => {
+    const map: Record<string, string> = { ...AMOUNT_TYPE_LABELS };
+    (classificationOptions ?? []).
+    filter((o) => o.option_type === 'amount_type').
+    forEach((o) => {map[o.value] = o.label;});
+    return map;
+  }, [classificationOptions]);
 
   // Add income form - two step flow
   const [addStep, setAddStep] = useState<'name' | 'details'>('name');
@@ -133,23 +170,23 @@ export default function Incomes() {
           cmp = a.date.localeCompare(b.date);
           break;
         case 'source':
-          cmp = (INCOME_SOURCE_LABELS[a.source as IncomeSource] || a.source).localeCompare(
-            INCOME_SOURCE_LABELS[b.source as IncomeSource] || b.source, 'he'
+          cmp = (sourceLabels[a.source] || a.source).localeCompare(
+            sourceLabels[b.source] || b.source, 'he'
           );
           break;
         case 'payment_method':
-          cmp = (INCOME_PAYMENT_METHOD_LABELS[a.payment_method as IncomePaymentMethod] || a.payment_method).localeCompare(
-            INCOME_PAYMENT_METHOD_LABELS[b.payment_method as IncomePaymentMethod] || b.payment_method, 'he'
+          cmp = (paymentMethodLabels[a.payment_method] || a.payment_method).localeCompare(
+            paymentMethodLabels[b.payment_method] || b.payment_method, 'he'
           );
           break;
         case 'frequency':
-          cmp = (FREQUENCY_LABELS[a.frequency as Frequency] || a.frequency).localeCompare(
-            FREQUENCY_LABELS[b.frequency as Frequency] || b.frequency, 'he'
+          cmp = (frequencyLabels[a.frequency] || a.frequency).localeCompare(
+            frequencyLabels[b.frequency] || b.frequency, 'he'
           );
           break;
         case 'amount_type':
-          cmp = (AMOUNT_TYPE_LABELS[a.amount_type as AmountType] || a.amount_type).localeCompare(
-            AMOUNT_TYPE_LABELS[b.amount_type as AmountType] || b.amount_type, 'he'
+          cmp = (amountTypeLabels[a.amount_type] || a.amount_type).localeCompare(
+            amountTypeLabels[b.amount_type] || b.amount_type, 'he'
           );
           break;
         case 'notes':
@@ -160,7 +197,7 @@ export default function Incomes() {
     });
 
     return result;
-  }, [incomes, searchTerm, filterFrequency, filterSource, filterPaymentMethod, sortField, sortDirection]);
+  }, [incomes, searchTerm, filterFrequency, filterSource, filterPaymentMethod, sortField, sortDirection, sourceLabels, paymentMethodLabels, frequencyLabels, amountTypeLabels]);
 
   const handleSort = (field: IncomeSortField) => {
     if (sortField === field) {
@@ -218,25 +255,25 @@ export default function Incomes() {
       case 'source':
         return (
           <span data-ev-id="ev_854ee7dee7" className="text-foreground text-sm">
-            {INCOME_SOURCE_LABELS[income.source as IncomeSource] || income.source}
+            {sourceLabels[income.source] || income.source}
           </span>);
 
       case 'payment_method':
         return (
           <span data-ev-id="ev_9108cfa12f" className="text-foreground text-sm">
-            {INCOME_PAYMENT_METHOD_LABELS[income.payment_method as IncomePaymentMethod] || income.payment_method}
+            {paymentMethodLabels[income.payment_method] || income.payment_method}
           </span>);
 
       case 'frequency':
         return (
           <span data-ev-id="ev_0ffd473761" className="text-foreground text-sm">
-            {FREQUENCY_LABELS[income.frequency as Frequency] || income.frequency}
+            {frequencyLabels[income.frequency] || income.frequency}
           </span>);
 
       case 'amount_type':
         return (
           <span data-ev-id="ev_2d22777922" className="text-foreground text-sm">
-            {AMOUNT_TYPE_LABELS[income.amount_type as AmountType] || income.amount_type}
+            {amountTypeLabels[income.amount_type] || income.amount_type}
           </span>);
 
       case 'notes':
@@ -282,6 +319,7 @@ export default function Incomes() {
 
     setLoading(true);
     const updates: Partial<Income> = {};
+    if (bulkName) updates.name = bulkName;
     if (bulkFrequency) updates.frequency = bulkFrequency as Frequency;
     if (bulkAmountType) updates.amount_type = bulkAmountType as AmountType;
     if (bulkSource) updates.source = bulkSource as IncomeSource;
@@ -310,6 +348,7 @@ export default function Incomes() {
       setBulkPaymentMethod('');
       setBulkBillingMonth('');
       setBulkNotes('');
+      setBulkName('');
     }
     setLoading(false);
   };
@@ -452,10 +491,10 @@ export default function Incomes() {
       'סכום': income.amount,
       'תאריך': income.date,
       'חודש': income.billing_month,
-      'תדירות': FREQUENCY_LABELS[income.frequency as Frequency] || income.frequency,
-      'סוג סכום': AMOUNT_TYPE_LABELS[income.amount_type as AmountType] || income.amount_type,
-      'אמצעי תשלום': INCOME_PAYMENT_METHOD_LABELS[income.payment_method as IncomePaymentMethod] || income.payment_method,
-      'מקור': INCOME_SOURCE_LABELS[income.source as IncomeSource] || income.source,
+      'תדירות': frequencyLabels[income.frequency] || income.frequency,
+      'סוג סכום': amountTypeLabels[income.amount_type] || income.amount_type,
+      'אמצעי תשלום': paymentMethodLabels[income.payment_method] || income.payment_method,
+      'מקור': sourceLabels[income.source] || income.source,
       'הערות': income.notes || ''
     }));
 
@@ -580,22 +619,22 @@ export default function Incomes() {
               label="תדירות"
               value={newIncomeFrequency}
               onChange={(e) => setNewIncomeFrequency(e.target.value as Frequency)}
-              options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))} />
+              options={Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))} />
               <Select
               label="סוג סכום"
               value={newIncomeAmountType}
               onChange={(e) => setNewIncomeAmountType(e.target.value as AmountType)}
-              options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label }))} />
+              options={Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))} />
               <Select
               label="אמצעי תשלום"
               value={newIncomePaymentMethod}
               onChange={(e) => setNewIncomePaymentMethod(e.target.value as IncomePaymentMethod)}
-              options={Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))} />
+              options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
               <Select
               label="מקור"
               value={newIncomeSource}
               onChange={(e) => setNewIncomeSource(e.target.value as IncomeSource)}
-              options={Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({ value, label }))} />
+              options={Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))} />
               <Input
               label="הערות"
               placeholder="הערה או תיאור קצר"
@@ -669,7 +708,7 @@ export default function Incomes() {
                 onChange={(e) => setFilterFrequency(e.target.value)}
                 options={[
                 { value: '', label: 'הכל' },
-                ...Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))]
                 } />
                 <Select
                 label="מקור"
@@ -677,7 +716,7 @@ export default function Incomes() {
                 onChange={(e) => setFilterSource(e.target.value)}
                 options={[
                 { value: '', label: 'הכל' },
-                ...Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))]
                 } />
                 <Select
                 label="אמצעי תשלום"
@@ -685,7 +724,7 @@ export default function Incomes() {
                 onChange={(e) => setFilterPaymentMethod(e.target.value)}
                 options={[
                 { value: '', label: 'הכל' },
-                ...Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))]
                 } />
               </div>
             }
@@ -717,13 +756,19 @@ export default function Incomes() {
 
               {showBulkEdit &&
             <div data-ev-id="ev_67b666fdf6" className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-4 border-t border-border">
+                  <Input
+                label="שם"
+                placeholder="שם חדש לכל הנבחרים"
+                value={bulkName}
+                onChange={(e) => setBulkName(e.target.value)} />
+
                   <Select
                 label="מקור"
                 value={bulkSource}
                 onChange={(e) => setBulkSource(e.target.value)}
                 options={[
                 { value: '', label: 'ללא שינוי' },
-                ...Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))]
                 } />
 
                   <Select
@@ -732,7 +777,7 @@ export default function Incomes() {
                 onChange={(e) => setBulkFrequency(e.target.value)}
                 options={[
                 { value: '', label: 'ללא שינוי' },
-                ...Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))]
                 } />
 
                   <Select
@@ -741,7 +786,7 @@ export default function Incomes() {
                 onChange={(e) => setBulkAmountType(e.target.value)}
                 options={[
                 { value: '', label: 'ללא שינוי' },
-                ...Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))]
                 } />
 
                   <Select
@@ -750,7 +795,7 @@ export default function Incomes() {
                 onChange={(e) => setBulkPaymentMethod(e.target.value)}
                 options={[
                 { value: '', label: 'ללא שינוי' },
-                ...Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))]
+                ...Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))]
                 } />
 
                   <Input
@@ -901,22 +946,22 @@ export default function Incomes() {
                 label="תדירות"
                 value={editingIncome.frequency}
                 onChange={(e) => setEditingIncome({ ...editingIncome, frequency: e.target.value as Frequency })}
-                options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({ value, label }))} />
+                options={Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))} />
                 <Select
                 label="סוג סכום"
                 value={editingIncome.amount_type}
                 onChange={(e) => setEditingIncome({ ...editingIncome, amount_type: e.target.value as AmountType })}
-                options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({ value, label }))} />
+                options={Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))} />
                 <Select
                 label="אמצעי תשלום"
                 value={editingIncome.payment_method}
                 onChange={(e) => setEditingIncome({ ...editingIncome, payment_method: e.target.value as IncomePaymentMethod })}
-                options={Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({ value, label }))} />
+                options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} />
                 <Select
                 label="מקור"
                 value={editingIncome.source}
                 onChange={(e) => setEditingIncome({ ...editingIncome, source: e.target.value as IncomeSource })}
-                options={Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({ value, label }))} />
+                options={Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))} />
                 <Input
                 label="הערות"
                 value={editingIncome.notes || ''}

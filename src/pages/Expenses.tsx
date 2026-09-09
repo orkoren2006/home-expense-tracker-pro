@@ -25,9 +25,12 @@ export default function Expenses() {
   const [showFilters, setShowFilters] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
 
-  // Filters
+  // Filters - default to current month
   const [filterCategory, setFilterCategory] = useState('');
-  const [filterMonth, setFilterMonth] = useState('');
+  const [filterMonth, setFilterMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  });
   const [filterFrequency, setFilterFrequency] = useState('');
   const [filterAmountType, setFilterAmountType] = useState('');
   const [filterExpenseType, setFilterExpenseType] = useState('');
@@ -45,6 +48,7 @@ export default function Expenses() {
   const [bulkCreditCardId, setBulkCreditCardId] = useState('');
   const [bulkBillingMonth, setBulkBillingMonth] = useState('');
   const [bulkNotes, setBulkNotes] = useState('');
+  const [bulkName, setBulkName] = useState('');
 
   // Sorting - all columns are sortable
   type ExpenseSortField = 'name' | 'amount' | 'date' | 'category' | 'credit_card' | 'payment_method' | 'frequency' | 'expense_type' | 'amount_type' | 'notes';
@@ -467,6 +471,7 @@ export default function Expenses() {
 
     setLoading(true);
     const updates: Partial<Expense> = {};
+    if (bulkName) updates.name = bulkName;
     if (bulkCategoryId) updates.category_id = bulkCategoryId === '__none__' ? null : bulkCategoryId;
     if (bulkFrequency) updates.frequency = bulkFrequency as Frequency;
     if (bulkAmountType) updates.amount_type = bulkAmountType as AmountType;
@@ -499,6 +504,7 @@ export default function Expenses() {
       setBulkCreditCardId('');
       setBulkBillingMonth('');
       setBulkNotes('');
+      setBulkName('');
     }
     setLoading(false);
   };
@@ -852,6 +858,12 @@ export default function Expenses() {
 
               {showBulkEdit &&
             <div data-ev-id="ev_0430860d0f" className="grid grid-cols-2 md:grid-cols-5 gap-3 pt-4 border-t border-border">
+                  <Input
+                label="שם"
+                placeholder="שם חדש לכל הנבחרים"
+                value={bulkName}
+                onChange={(e) => setBulkName(e.target.value)} />
+
                   <Select
                 label="קטגוריה"
                 value={bulkCategoryId}
