@@ -112,24 +112,36 @@ export default function Incomes() {
   const [rememberRule, setRememberRule] = useState(true);
   const [hasExistingRule, setHasExistingRule] = useState(false);
 
-  const loadIncomes = async () => {
-    if (!supabase || !household) return;
+const loadIncomes = async () => {
+  if (!supabase || !household) return;
 
-    setLoading(true);
-    let query = supabase.
-    from('incomes').
-    select('*').
-    eq('household_id', household.id).
-    order('date', { ascending: false });
+  setLoading(true);
+  let allData: Income[] = [];
+  let from = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    let query = supabase
+      .from('incomes')
+      .select('*')
+      .eq('household_id', household.id)
+      .order('date', { ascending: false })
+      .range(from, from + pageSize - 1);
 
     if (filterMonth) {
       query = query.eq('billing_month', filterMonth);
     }
 
     const { data } = await query;
-    setIncomes((data ?? []) as Income[]);
-    setLoading(false);
-  };
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data as Income[]);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  setIncomes(allData);
+  setLoading(false);
+};
 
   useEffect(() => {
     loadIncomes();
