@@ -109,26 +109,36 @@ export default function Expenses() {
     return map;
   }, [classificationOptions]);
 
-  const loadExpenses = async () => {
-    if (!supabase || !household) return;
+const loadExpenses = async () => {
+  if (!supabase || !household) return;
 
-    setLoading(true);
-    let query = supabase.
-    from('expenses').
-    select('*').
-    eq('household_id', household.id).
-    order('date', { ascending: false });
+  setLoading(true);
+  let allData: Expense[] = [];
+  let from = 0;
+  const pageSize = 1000;
+
+  while (true) {
+    let query = supabase
+      .from('expenses')
+      .select('*')
+      .eq('household_id', household.id)
+      .order('date', { ascending: false })
+      .range(from, from + pageSize - 1);
 
     if (filterMonth) {
-      // filterMonth is already in YYYY-MM format, use billing_month
-      console.log('Expenses filter by billing_month:', filterMonth);
       query = query.eq('billing_month', filterMonth);
     }
 
     const { data } = await query;
-    setExpenses((data ?? []) as Expense[]);
-    setLoading(false);
-  };
+    if (!data || data.length === 0) break;
+    allData = allData.concat(data as Expense[]);
+    if (data.length < pageSize) break;
+    from += pageSize;
+  }
+
+  setExpenses(allData);
+  setLoading(false);
+};
 
   useEffect(() => {
     loadExpenses();
