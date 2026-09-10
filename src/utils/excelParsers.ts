@@ -28,6 +28,15 @@ const EXPENSE_RULE_COLUMN_ALIASES: Record<string, string[]> = {
   notes: ['הערות', 'הערה', 'notes', 'note']
 };
 
+const INCOME_RULE_COLUMN_ALIASES: Record<string, string[]> = {
+  income_name: ['שם הכנסה', 'שם', 'name', 'income_name', 'תיאור', 'מקור הכנסה'],
+  frequency: ['תדירות', 'frequency'],
+  amount_type: ['סוג סכום', 'amount_type'],
+  payment_method: ['אמצעי תשלום', 'payment_method'],
+  source: ['מקור', 'source', 'סוג הכנסה'],
+  notes: ['הערות', 'הערה', 'notes', 'note']
+};
+
 // Helper function to auto-detect column mapping based on column names
 export function autoDetectExpenseMapping(columns: string[]): ColumnMapping {
   const mapping: ColumnMapping = { name: '', amount: '', date: '', credit_card: '', notes: '' };
@@ -75,6 +84,25 @@ export function autoDetectRuleMapping(columns: string[]): Record<string, string>
     const colLower = col.toLowerCase().trim();
     
     for (const [field, aliases] of Object.entries(EXPENSE_RULE_COLUMN_ALIASES)) {
+      if (aliases.some(alias => colLower === alias.toLowerCase() || colLower.includes(alias.toLowerCase()))) {
+        if (!mapping[field]) {
+          mapping[field] = col;
+        }
+        break;
+      }
+    }
+  }
+  
+  return mapping;
+}
+
+export function autoDetectIncomeRuleMapping(columns: string[]): Record<string, string> {
+  const mapping: Record<string, string> = {};
+  
+  for (const col of columns) {
+    const colLower = col.toLowerCase().trim();
+    
+    for (const [field, aliases] of Object.entries(INCOME_RULE_COLUMN_ALIASES)) {
       if (aliases.some(alias => colLower === alias.toLowerCase() || colLower.includes(alias.toLowerCase()))) {
         if (!mapping[field]) {
           mapping[field] = col;
@@ -329,6 +357,74 @@ export async function parseRulesExcel(file: File): Promise<{
         }>;
         
         resolve({ rules, columns });
+      } catch {
+        reject(new Error('שגיאה בקריאת הקובץ'));
+      }
+    };
+    
+    reader.onerror = () => reject(new Error('שגיאה בקריאת הקובץ'));
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Parse income rules from Excel
+export async function parseIncomeRulesExcel(file: File): Promise<{
+  rules: Array<{
+    income_name: string;
+    frequency?: string;
+    amount_type?: string;
+    payment_method?: string;
+    source?: string;
+    notes?: string;
+  }>;
+  columns: string[];
+  mapping: Record<string, string>;
+}> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    
+    reader.onload = (e) => {
+      try {
+        const data = new Uint8Array(e.target?.result as ArrayBuffer);
+        const workbook = XLSX.read(data, { type: 'array' });
+        
+        const sheetName = workbook.SheetNames[0];
+        const sheet = workbook.Sheets[sheetName];
+        const rawData = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet);
+        
+        if (rawData.length === 0) {
+          reject(new Error('הקובץ ריק'));
+          return;
+        }
+        
+        const columns = Object.keys(rawData[0] || {});
+        
+        // Auto-detect column mapping
+        const colMapping = autoDetectIncomeRuleMapping(columns);
+        
+        // Map common column names using detected mapping
+        const rules = rawData.map((row) => {
+          const name = colMapping.income_name ? row[colMapping.income_name] : (row['שם הכנסה'] || row['שם'] || row['name'] || row['income_name']);
+          if (!name) return null;
+          
+          return {
+            income_name: String(name).trim(),
+            frequency: String(colMapping.frequency ? row[colMapping.frequency] : (row['תדירות'] || row['frequency'] || '')).trim() || undefined,
+            amount_type: String(colMapping.amount_type ? row[colMapping.amount_type] : (row['סוג סכום'] || row['amount_type'] || '')).trim() || undefined,
+            payment_method: String(colMapping.payment_method ? row[colMapping.payment_method] : (row['אמצעי תשלום'] || row['payment_method'] || '')).trim() || undefined,
+            source: String(colMapping.source ? row[colMapping.source] : (row['מקור'] || row['source'] || '')).trim() || undefined,
+            notes: String(colMapping.notes ? row[colMapping.notes] : (row['הערות'] || row['notes'] || '')).trim() || undefined,
+          };
+        }).filter(Boolean) as Array<{
+          income_name: string;
+          frequency?: string;
+          amount_type?: string;
+          payment_method?: string;
+          source?: string;
+          notes?: string;
+        }>;
+        
+        resolve({ rules, columns, mapping: colMapping });
       } catch {
         reject(new Error('שגיאה בקריאת הקובץ'));
       }

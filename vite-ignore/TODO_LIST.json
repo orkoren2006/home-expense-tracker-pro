@@ -1,19 +1,23 @@
 {
-  "summary": "תיקון 3 בעיות: סיווגים, פילטר ברירת מחדל, עריכת שם מרובה",
+  "summary": "ייבוא כללים עם תצוגה מקדימה ואישור",
   "todos": [
     {
       "id": 1,
-      "description": "תיקון סיווגים מותאמים להכנסות + פילטר ברירת מחדל לחודש נוכחי",
-      "files": [],
+      "description": "הוספת parseIncomeRulesExcel ב-excelParsers.ts",
+      "files": [
+        "src/utils/excelParsers.ts"
+      ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "עריכה מרובה - הוספת שדה שם בהוצאות והכנסות",
-      "files": [],
+      "description": "עדכון Settings.tsx - מודל אישור ייבוא כללים עם מיפוי ותצוגה מקדימה",
+      "files": [
+        "src/pages/Settings.tsx"
+      ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-09T06:16:01.233Z",
-  "updatedAt": "2026-09-09T06:19:57.570Z"
+  "createdAt": "2026-09-10T08:12:34.432Z",
+  "updatedAt": "2026-09-10T08:18:15.849Z"
 }
