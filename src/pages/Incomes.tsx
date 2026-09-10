@@ -22,7 +22,7 @@ export default function Incomes() {
   const [incomes, setIncomes] = useState<Income[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
+  const [showFilters, setShowFilters] = useState(true);
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
 
   // Filters - default to current month
