@@ -600,8 +600,8 @@ const loadExpenses = async () => {
             <p data-ev-id="ev_88e2756b85" className="text-muted-foreground">
               סה"כ: ₪{totalAmount.toLocaleString()} ({filteredExpenses.length} הוצאות)
               {selectedIds.size > 0 &&
-              <span data-ev-id="ev_dffb4dfa49" className="mr-2 text-primary font-medium">
-                  | נבחר: ₪{Math.abs(selectedAmount).toLocaleString()} ({selectedIds.size})
+              <span data-ev-id="ev_dffb4dfa49" className={`mr-2 font-medium ${selectedAmount >= 0 ? 'text-red-600' : 'text-green-600'}`}>
+                  | נבחר: {selectedAmount < 0 ? 'זיכוי ' : ''}₪{Math.abs(selectedAmount).toLocaleString()} ({selectedIds.size})
                 </span>
               }
             </p>
