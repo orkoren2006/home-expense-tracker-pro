@@ -5,7 +5,8 @@ import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
-import type { Expense, Income } from '@/types';
+import type { Expense, Income, PaymentMethod, IncomeSource } from '@/types';
+import { PAYMENT_METHOD_LABELS, INCOME_SOURCE_LABELS } from '@/types';
 
 export default function Home() {
   const { household, categories, expenseRules } = useHousehold();
@@ -210,25 +211,90 @@ export default function Home() {
           });
           const sorted = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
           return (
-            <div data-ev-id="ev_6ef7d8d18e">
-              <h3 data-ev-id="ev_977093bf13" className="text-lg font-semibold text-foreground mb-4">הוצאות לפי קטגוריה</h3>
+            <div data-ev-id="ev_04cb73bc39">
+              <h3 data-ev-id="ev_0472bee886" className="text-lg font-semibold text-foreground mb-4">הוצאות לפי קטגוריה</h3>
               <Card variant="outlined" className="p-0 overflow-hidden">
-                <div data-ev-id="ev_75fd250c4f" className="divide-y divide-border">
+                <div data-ev-id="ev_590c5aaa5d" className="divide-y divide-border">
                   {sorted.map(([catName, total]) =>
-                  <div data-ev-id="ev_d2b6685ca8" key={catName} className="flex items-center justify-between p-4">
-                      <div data-ev-id="ev_50cb668d25">
-                        <p data-ev-id="ev_f751e0648e" className="font-medium text-foreground">{catName}</p>
-                        <p data-ev-id="ev_efd44102d1" className="text-sm text-muted-foreground">
+                  <div data-ev-id="ev_56d919de7d" key={catName} className="flex items-center justify-between p-4">
+                      <div data-ev-id="ev_5c78b57ea1">
+                        <p data-ev-id="ev_80a987d8a7" className="font-medium text-foreground">{catName}</p>
+                        <p data-ev-id="ev_991ae01878" className="text-sm text-muted-foreground">
                           {(total / totalExpenses * 100).toFixed(0)}% מהסה"כ
                         </p>
                       </div>
-                      <p data-ev-id="ev_326fd1976d" className="font-semibold text-foreground">₪{total.toLocaleString()}</p>
+                      <p data-ev-id="ev_44dee03096" className="font-semibold text-foreground">₪{total.toLocaleString()}</p>
                     </div>
                   )}
                 </div>
               </Card>
             </div>);
+        })()}
 
+        {/* Payment method breakdown */}
+        {monthlyExpenses.length > 0 && (() => {
+          const byPayment: Record<string, number> = {};
+          monthlyExpenses.forEach((e) => {
+            const methodLabel = PAYMENT_METHOD_LABELS[e.payment_method as PaymentMethod] || e.payment_method;
+            byPayment[methodLabel] = (byPayment[methodLabel] || 0) + Number(e.amount);
+          });
+          const sorted = Object.entries(byPayment).sort((a, b) => b[1] - a[1]);
+          return (
+            <div data-ev-id="ev_9c5dd479d6">
+              <h3 data-ev-id="ev_250d1dbda5" className="text-lg font-semibold text-foreground mb-4">הוצאות לפי אמצעי תשלום</h3>
+              <Card variant="outlined" className="p-0 overflow-hidden">
+                <div data-ev-id="ev_91ba7d3d5f" className="divide-y divide-border">
+                  {sorted.map(([methodName, total]) =>
+                  <div data-ev-id="ev_583f88135b" key={methodName} className="flex items-center justify-between p-4">
+                      <div data-ev-id="ev_8647255f56">
+                        <p data-ev-id="ev_4f20d3f22d" className="font-medium text-foreground">{methodName}</p>
+                        <p data-ev-id="ev_4c85d8647f" className="text-sm text-muted-foreground">
+                          {(total / totalExpenses * 100).toFixed(0)}% מהסה"כ
+                        </p>
+                      </div>
+                      <p data-ev-id="ev_57eb91a2ad" className="font-semibold text-red-600">₪{total.toLocaleString()}</p>
+                    </div>
+                  )}
+                </div>
+              </Card>
+            </div>);
+        })()}
+
+        {/* Income by source breakdown */}
+        {monthlyIncomes.length > 0 && (() => {
+          const bySource: Record<string, {total: number;key: string;}> = {};
+          monthlyIncomes.forEach((inc) => {
+            const sourceLabel = INCOME_SOURCE_LABELS[inc.source as IncomeSource] || inc.source;
+            if (!bySource[sourceLabel]) {
+              bySource[sourceLabel] = { total: 0, key: inc.source };
+            }
+            bySource[sourceLabel].total += Number(inc.amount);
+          });
+          const sorted = Object.entries(bySource).sort((a, b) => b[1].total - a[1].total);
+          return (
+            <div data-ev-id="ev_a43d769a2c">
+              <h3 data-ev-id="ev_5bf3ef390f" className="text-lg font-semibold text-foreground mb-4">הכנסות לפי מקור</h3>
+              <Card variant="outlined" className="p-0 overflow-hidden">
+                <div data-ev-id="ev_961d98d99e" className="divide-y divide-border">
+                  {sorted.map(([sourceName, { total, key }]) => {
+                    const isSavingsWithdrawal = key === 'savings';
+                    return (
+                      <div data-ev-id="ev_75c522f0ab" key={sourceName} className={`flex items-center justify-between p-4 ${isSavingsWithdrawal ? 'bg-amber-50 border-r-4 border-amber-500' : ''}`}>
+                        <div data-ev-id="ev_fa081bc469">
+                          <p data-ev-id="ev_ceeb59ee45" className={`font-medium ${isSavingsWithdrawal ? 'text-amber-800' : 'text-foreground'}`}>
+                            {isSavingsWithdrawal && '⚠️ '}{sourceName}
+                          </p>
+                          <p data-ev-id="ev_78cd4c3a03" className={`text-sm ${isSavingsWithdrawal ? 'text-amber-600' : 'text-muted-foreground'}`}>
+                            {(total / totalIncomes * 100).toFixed(0)}% מהסה"כ
+                          </p>
+                        </div>
+                        <p data-ev-id="ev_3fb399ea0a" className={`font-semibold ${isSavingsWithdrawal ? 'text-amber-700' : 'text-green-600'}`}>₪{total.toLocaleString()}</p>
+                      </div>);
+
+                  })}
+                </div>
+              </Card>
+            </div>);
         })()}
 
         {/* Recent expenses */}

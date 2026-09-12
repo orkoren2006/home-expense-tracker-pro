@@ -1,23 +1,23 @@
 {
-  "summary": "ייבוא כללים עם תצוגה מקדימה ואישור",
+  "summary": "עדכון דף הבית והגדרות",
   "todos": [
     {
       "id": 1,
-      "description": "הוספת parseIncomeRulesExcel ב-excelParsers.ts",
+      "description": "הוספת פירוט לפי אמצעי תשלום והכנסות לפי מקור בדף הבית",
       "files": [
-        "src/utils/excelParsers.ts"
+        "src/pages/Home.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "עדכון Settings.tsx - מודל אישור ייבוא כללים עם מיפוי ותצוגה מקדימה",
+      "description": "הסרת קטגוריות הכנסות מההגדרות",
       "files": [
         "src/pages/Settings.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-10T08:12:34.432Z",
-  "updatedAt": "2026-09-10T08:18:15.849Z"
+  "createdAt": "2026-09-12T06:55:55.304Z",
+  "updatedAt": "2026-09-12T06:57:28.695Z"
 }

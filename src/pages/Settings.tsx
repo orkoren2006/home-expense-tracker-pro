@@ -50,7 +50,6 @@ export default function Settings() {
 
   // Category form
   const [newCategoryName, setNewCategoryName] = useState('');
-  const [newCategoryType, setNewCategoryType] = useState<'expense' | 'income'>('expense');
 
   // Credit card form
   const [newCardName, setNewCardName] = useState('');
@@ -214,7 +213,7 @@ export default function Settings() {
     await supabase.from('categories').insert({
       household_id: household.id,
       name: newCategoryName.trim(),
-      type: newCategoryType
+      type: 'expense'
     });
 
     setNewCategoryName('');
@@ -746,7 +745,6 @@ export default function Settings() {
   };
 
   const expenseCategories = categories.filter((c) => c.type === 'expense');
-  const incomeCategories = categories.filter((c) => c.type === 'income');
 
   return (
     <Layout>
@@ -787,15 +785,6 @@ export default function Settings() {
                 onChange={(e) => setNewCategoryName(e.target.value)}
                 className="flex-1" />
 
-                <Select
-                value={newCategoryType}
-                onChange={(e) => setNewCategoryType(e.target.value as 'expense' | 'income')}
-                options={[
-                { value: 'expense', label: 'הוצאה' },
-                { value: 'income', label: 'הכנסה' }]
-                }
-                className="w-32" />
-
                 <Button onClick={handleAddCategory} disabled={loading}>
                   <Plus className="w-4 h-4" />
                 </Button>
@@ -823,26 +812,7 @@ export default function Settings() {
               </div>
             </Card>
 
-            {/* Income categories */}
-            <Card>
-              <h3 data-ev-id="ev_7e07f21fb0" className="font-semibold text-foreground mb-4">קטגוריות הכנסות</h3>
-              <div data-ev-id="ev_d439a2a487" className="flex flex-wrap gap-2">
-                {incomeCategories.map((cat) =>
-              <div data-ev-id="ev_9e7ec35a49"
-              key={cat.id}
-              className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
 
-                    <span data-ev-id="ev_79e65e7af1" className="text-foreground">{cat.name}</span>
-                    <button data-ev-id="ev_604d85735d"
-                onClick={() => handleDeleteCategory(cat.id)}
-                className="text-muted-foreground hover:text-red-600">
-
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-              )}
-              </div>
-            </Card>
           </div>
         }
 
