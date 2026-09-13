@@ -1,15 +1,15 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router';
-import { Upload, Settings, List, TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft, Wallet, Scale } from 'lucide-react';
+import { TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft, Scale } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
-import type { Expense, Income, PaymentMethod, IncomeSource } from '@/types';
+import type { Expense, Income } from '@/types';
 import { PAYMENT_METHOD_LABELS, INCOME_SOURCE_LABELS } from '@/types';
 
 export default function Home() {
-  const { household, categories, expenseRules } = useHousehold();
+  const { household, categories, expenseRules, classificationOptions } = useHousehold();
   const [monthlyExpenses, setMonthlyExpenses] = useState<Expense[]>([]);
   const [monthlyIncomes, setMonthlyIncomes] = useState<Income[]>([]);
   const [unclassifiedCount, setUnclassifiedCount] = useState(0);
@@ -67,31 +67,45 @@ export default function Home() {
 
   const monthName = selectedMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 
+  // Build label maps including custom classification options
+  const paymentMethodLabels: Record<string, string> = { ...PAYMENT_METHOD_LABELS };
+  const incomeSourceLabels: Record<string, string> = { ...INCOME_SOURCE_LABELS };
+
+  (classificationOptions ?? []).forEach((opt) => {
+    if (opt.option_type === 'payment_method') {
+      paymentMethodLabels[opt.value] = opt.label;
+    } else if (opt.option_type === 'income_source') {
+      incomeSourceLabels[opt.value] = opt.label;
+    }
+  });
+
   return (
     <Layout>
       <div data-ev-id="ev_3527df7105" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
-        {/* Welcome header */}
-        <div data-ev-id="ev_06299b7557" className="flex items-center justify-between">
-          <div data-ev-id="ev_395d5c5060">
-            <h2 data-ev-id="ev_7f2967efd7" className="text-2xl font-bold text-foreground">שלום!</h2>
-            <p data-ev-id="ev_beaa27431f" className="text-muted-foreground">סיכום החודש</p>
+        {/* Welcome header with sticky month navigation */}
+        <div data-ev-id="ev_fb617fcf08" className="flex items-center justify-between">
+          <div data-ev-id="ev_6875557226">
+            <h2 data-ev-id="ev_3bc8f30c35" className="text-2xl font-bold text-foreground">שלום!</h2>
+            <p data-ev-id="ev_b05564e2c6" className="text-muted-foreground">סיכום החודש</p>
           </div>
-          <div data-ev-id="ev_299babe16a" className="flex items-center gap-2 bg-card border border-border rounded-lg p-2">
-            <button data-ev-id="ev_23121a8981"
+        </div>
+
+        {/* Sticky month navigation */}
+        <div data-ev-id="ev_b7782cec9e" className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 -mx-4 px-4 md:-mx-6 md:px-6">
+          <div data-ev-id="ev_b24b431572" className="flex items-center justify-center gap-2 bg-card border border-border rounded-lg p-2 shadow-sm">
+            <button data-ev-id="ev_a74d083bf0"
             onClick={goToNextMonth}
             className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
             title="חודש הבא">
-
               <ChevronRight className="w-5 h-5" />
             </button>
-            <span data-ev-id="ev_75e9f5c40a" className="font-medium text-foreground min-w-[120px] text-center">
+            <span data-ev-id="ev_419442a76e" className="font-medium text-foreground min-w-[120px] text-center">
               {monthName}
             </span>
-            <button data-ev-id="ev_43d483923f"
+            <button data-ev-id="ev_d06a2bd515"
             onClick={goToPrevMonth}
             className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
             title="חודש קודם">
-
               <ChevronLeft className="w-5 h-5" />
             </button>
           </div>
@@ -157,49 +171,61 @@ export default function Home() {
           </Card>
         }
 
-        {/* Quick actions */}
-        <div data-ev-id="ev_b379b5ccf4">
-          <h3 data-ev-id="ev_b034e115a6" className="text-lg font-semibold text-foreground mb-4">פעולות מהירות</h3>
-          <div data-ev-id="ev_5d788f3684" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link data-ev-id="ev_2f59273a4b"
-            to="/import"
-            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
+        {/* Payment method & Income source breakdown - grid */}
+        <div data-ev-id="ev_b12f5a1582" className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Payment method breakdown */}
+          <Card>
+            <h3 data-ev-id="ev_e7a16680ed" className="font-semibold text-foreground mb-3">הוצאות לפי אמצעי תשלום</h3>
+            {monthlyExpenses.length > 0 ? (() => {
+              const byPayment: Record<string, number> = {};
+              monthlyExpenses.forEach((e) => {
+                const methodLabel = paymentMethodLabels[e.payment_method] || e.payment_method;
+                byPayment[methodLabel] = (byPayment[methodLabel] || 0) + Number(e.amount);
+              });
+              const sorted = Object.entries(byPayment).sort((a, b) => b[1] - a[1]);
+              return (
+                <div data-ev-id="ev_54db482fc4" className="flex flex-col gap-2">
+                  {sorted.map(([methodName, total]) =>
+                  <div data-ev-id="ev_657276a73b" key={methodName} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+                      <span data-ev-id="ev_c66db46eb0" className="text-foreground">{methodName}</span>
+                      <span data-ev-id="ev_a6ffa5d30b" className="font-semibold text-red-600">₪{total.toLocaleString()}</span>
+                    </div>
+                  )}
+                </div>);
 
-              <div data-ev-id="ev_c48213d0a5" className="w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center">
-                <Upload className="w-6 h-6 text-primary" />
-              </div>
-              <div data-ev-id="ev_27e390bd0c">
-                <h4 data-ev-id="ev_3a44d7cd92" className="font-semibold text-foreground">ייבוא אקסל</h4>
-                <p data-ev-id="ev_d836d9c0a1" className="text-sm text-muted-foreground">טען הוצאות מחברת אשראי</p>
-              </div>
-            </Link>
+            })() : <p data-ev-id="ev_84f46464d3" className="text-muted-foreground text-sm">אין הוצאות בחודש זה</p>}
+          </Card>
 
-            <Link data-ev-id="ev_2f09eabe72"
-            to="/expenses"
-            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
+          {/* Income by source breakdown */}
+          <Card>
+            <h3 data-ev-id="ev_63e24509e1" className="font-semibold text-foreground mb-3">הכנסות לפי מקור</h3>
+            {monthlyIncomes.length > 0 ? (() => {
+              const bySource: Record<string, {total: number;key: string;}> = {};
+              monthlyIncomes.forEach((inc) => {
+                const sourceLabel = incomeSourceLabels[inc.source] || inc.source;
+                if (!bySource[sourceLabel]) {
+                  bySource[sourceLabel] = { total: 0, key: inc.source };
+                }
+                bySource[sourceLabel].total += Number(inc.amount);
+              });
+              const sorted = Object.entries(bySource).sort((a, b) => b[1].total - a[1].total);
+              return (
+                <div data-ev-id="ev_c95e3e2780" className="flex flex-col gap-2">
+                  {sorted.map(([sourceName, { total, key }]) => {
+                    const isSavingsWithdrawal = key === 'savings';
+                    return (
+                      <div data-ev-id="ev_f8fecd3298" key={sourceName} className={`flex items-center justify-between py-2 border-b border-border last:border-b-0 ${isSavingsWithdrawal ? 'bg-amber-50 -mx-4 px-4 rounded' : ''}`}>
+                        <span data-ev-id="ev_de4234dbd5" className={isSavingsWithdrawal ? 'text-amber-800 font-medium' : 'text-foreground'}>
+                          {isSavingsWithdrawal && '⚠️ '}{sourceName}
+                        </span>
+                        <span data-ev-id="ev_ed6e10dd08" className={`font-semibold ${isSavingsWithdrawal ? 'text-amber-700' : 'text-green-600'}`}>₪{total.toLocaleString()}</span>
+                      </div>);
 
-              <div data-ev-id="ev_87174a79ef" className="w-12 h-12 rounded-full bg-secondary/50 flex items-center justify-center">
-                <List className="w-6 h-6 text-secondary-foreground" />
-              </div>
-              <div data-ev-id="ev_0ae398fb3c">
-                <h4 data-ev-id="ev_949641fa3a" className="font-semibold text-foreground">רשימת הוצאות</h4>
-                <p data-ev-id="ev_80b60e47c6" className="text-sm text-muted-foreground">צפה, סנן וערוך</p>
-              </div>
-            </Link>
+                  })}
+                </div>);
 
-            <Link data-ev-id="ev_df72d81125"
-            to="/settings"
-            className="flex items-center gap-4 p-4 bg-card rounded-xl border border-border hover:border-primary hover:shadow-md transition-all">
-
-              <div data-ev-id="ev_6e62ff4b81" className="w-12 h-12 rounded-full bg-muted flex items-center justify-center">
-                <Settings className="w-6 h-6 text-muted-foreground" />
-              </div>
-              <div data-ev-id="ev_8beb3fa2e5">
-                <h4 data-ev-id="ev_2e65bbd5dd" className="font-semibold text-foreground">הגדרות</h4>
-                <p data-ev-id="ev_8c77761a02" className="text-sm text-muted-foreground">קטגוריות, כרטיסים, בית</p>
-              </div>
-            </Link>
-          </div>
+            })() : <p data-ev-id="ev_4de3b1f445" className="text-muted-foreground text-sm">אין הכנסות בחודש זה</p>}
+          </Card>
         </div>
 
         {/* Category breakdown */}
@@ -226,72 +252,6 @@ export default function Home() {
                       <p data-ev-id="ev_44dee03096" className="font-semibold text-foreground">₪{total.toLocaleString()}</p>
                     </div>
                   )}
-                </div>
-              </Card>
-            </div>);
-        })()}
-
-        {/* Payment method breakdown */}
-        {monthlyExpenses.length > 0 && (() => {
-          const byPayment: Record<string, number> = {};
-          monthlyExpenses.forEach((e) => {
-            const methodLabel = PAYMENT_METHOD_LABELS[e.payment_method as PaymentMethod] || e.payment_method;
-            byPayment[methodLabel] = (byPayment[methodLabel] || 0) + Number(e.amount);
-          });
-          const sorted = Object.entries(byPayment).sort((a, b) => b[1] - a[1]);
-          return (
-            <div data-ev-id="ev_9c5dd479d6">
-              <h3 data-ev-id="ev_250d1dbda5" className="text-lg font-semibold text-foreground mb-4">הוצאות לפי אמצעי תשלום</h3>
-              <Card variant="outlined" className="p-0 overflow-hidden">
-                <div data-ev-id="ev_91ba7d3d5f" className="divide-y divide-border">
-                  {sorted.map(([methodName, total]) =>
-                  <div data-ev-id="ev_583f88135b" key={methodName} className="flex items-center justify-between p-4">
-                      <div data-ev-id="ev_8647255f56">
-                        <p data-ev-id="ev_4f20d3f22d" className="font-medium text-foreground">{methodName}</p>
-                        <p data-ev-id="ev_4c85d8647f" className="text-sm text-muted-foreground">
-                          {(total / totalExpenses * 100).toFixed(0)}% מהסה"כ
-                        </p>
-                      </div>
-                      <p data-ev-id="ev_57eb91a2ad" className="font-semibold text-red-600">₪{total.toLocaleString()}</p>
-                    </div>
-                  )}
-                </div>
-              </Card>
-            </div>);
-        })()}
-
-        {/* Income by source breakdown */}
-        {monthlyIncomes.length > 0 && (() => {
-          const bySource: Record<string, {total: number;key: string;}> = {};
-          monthlyIncomes.forEach((inc) => {
-            const sourceLabel = INCOME_SOURCE_LABELS[inc.source as IncomeSource] || inc.source;
-            if (!bySource[sourceLabel]) {
-              bySource[sourceLabel] = { total: 0, key: inc.source };
-            }
-            bySource[sourceLabel].total += Number(inc.amount);
-          });
-          const sorted = Object.entries(bySource).sort((a, b) => b[1].total - a[1].total);
-          return (
-            <div data-ev-id="ev_a43d769a2c">
-              <h3 data-ev-id="ev_5bf3ef390f" className="text-lg font-semibold text-foreground mb-4">הכנסות לפי מקור</h3>
-              <Card variant="outlined" className="p-0 overflow-hidden">
-                <div data-ev-id="ev_961d98d99e" className="divide-y divide-border">
-                  {sorted.map(([sourceName, { total, key }]) => {
-                    const isSavingsWithdrawal = key === 'savings';
-                    return (
-                      <div data-ev-id="ev_75c522f0ab" key={sourceName} className={`flex items-center justify-between p-4 ${isSavingsWithdrawal ? 'bg-amber-50 border-r-4 border-amber-500' : ''}`}>
-                        <div data-ev-id="ev_fa081bc469">
-                          <p data-ev-id="ev_ceeb59ee45" className={`font-medium ${isSavingsWithdrawal ? 'text-amber-800' : 'text-foreground'}`}>
-                            {isSavingsWithdrawal && '⚠️ '}{sourceName}
-                          </p>
-                          <p data-ev-id="ev_78cd4c3a03" className={`text-sm ${isSavingsWithdrawal ? 'text-amber-600' : 'text-muted-foreground'}`}>
-                            {(total / totalIncomes * 100).toFixed(0)}% מהסה"כ
-                          </p>
-                        </div>
-                        <p data-ev-id="ev_3fb399ea0a" className={`font-semibold ${isSavingsWithdrawal ? 'text-amber-700' : 'text-green-600'}`}>₪{total.toLocaleString()}</p>
-                      </div>);
-
-                  })}
                 </div>
               </Card>
             </div>);
