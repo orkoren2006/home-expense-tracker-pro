@@ -26,8 +26,8 @@ export function Layout({ children }: LayoutProps) {
     <div data-ev-id="ev_e7212edf2c" className="min-h-screen bg-background" dir="rtl">
       {/* Compact top bar - just household name */}
       {household &&
-      <div data-ev-id="ev_aa487c4dcb" className="bg-card/80 backdrop-blur-sm border-b border-border py-2 px-4 text-center">
-          <span data-ev-id="ev_da6a2f87e5" className="text-sm font-medium text-primary">{household.name}</span>
+      <div data-ev-id="ev_aa487c4dcb" className="backdrop-blur-sm border-b bg-card/80 text-left px-4 py-2 border-border">
+          <span data-ev-id="ev_da6a2f87e5" className="text-primary font-bold text-base mx-[20px]">ניהול תקציב - משפחת קורן</span>
         </div>
       }
 
