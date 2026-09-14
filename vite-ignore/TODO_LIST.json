@@ -1,23 +1,25 @@
 {
-  "summary": "עדכון דף הבית והגדרות",
+  "summary": "שיפורים בממשק ובלוגיקת כללים",
   "todos": [
     {
       "id": 1,
-      "description": "הוספת פירוט לפי אמצעי תשלום והכנסות לפי מקור בדף הבית",
+      "description": "הסרת ההדר והעברת כפתור יציאה להגדרות",
       "files": [
-        "src/pages/Home.tsx"
+        "src/components/Layout.tsx",
+        "src/pages/Settings.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "הסרת קטגוריות הכנסות מההגדרות",
+      "description": "הוספת שאלה לשמירת כלל + סימון קיום כלל במודל עריכה",
       "files": [
-        "src/pages/Settings.tsx"
+        "src/pages/Expenses.tsx",
+        "src/pages/Incomes.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-12T06:55:55.304Z",
-  "updatedAt": "2026-09-12T06:57:28.695Z"
+  "createdAt": "2026-09-14T06:35:05.962Z",
+  "updatedAt": "2026-09-14T06:41:20.091Z"
 }

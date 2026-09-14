@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Filter, Edit2, Trash2, Download, CheckSquare, Square, X, ArrowUpDown, ArrowUp, ArrowDown, Plus } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, Download, CheckSquare, Square, X, ArrowUpDown, ArrowUp, ArrowDown, Plus, BookOpen } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +24,9 @@ export default function Expenses() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [editingExpense, setEditingExpense] = useState<Expense | null>(null);
+  const [originalExpense, setOriginalExpense] = useState<Expense | null>(null);
+  const [showSaveRulePrompt, setShowSaveRulePrompt] = useState(false);
+  const [pendingExpenseUpdate, setPendingExpenseUpdate] = useState<Expense | null>(null);
 
   // Filters - default to current month
   const [filterCategory, setFilterCategory] = useState('');
@@ -109,36 +112,36 @@ export default function Expenses() {
     return map;
   }, [classificationOptions]);
 
-const loadExpenses = async () => {
-  if (!supabase || !household) return;
+  const loadExpenses = async () => {
+    if (!supabase || !household) return;
 
-  setLoading(true);
-  let allData: Expense[] = [];
-  let from = 0;
-  const pageSize = 1000;
+    setLoading(true);
+    let allData: Expense[] = [];
+    let from = 0;
+    const pageSize = 1000;
 
-  while (true) {
-    let query = supabase
-      .from('expenses')
-      .select('*')
-      .eq('household_id', household.id)
-      .order('date', { ascending: false })
-      .range(from, from + pageSize - 1);
+    while (true) {
+      let query = supabase.
+      from('expenses').
+      select('*').
+      eq('household_id', household.id).
+      order('date', { ascending: false }).
+      range(from, from + pageSize - 1);
 
-    if (filterMonth) {
-      query = query.eq('billing_month', filterMonth);
+      if (filterMonth) {
+        query = query.eq('billing_month', filterMonth);
+      }
+
+      const { data } = await query;
+      if (!data || data.length === 0) break;
+      allData = allData.concat(data as Expense[]);
+      if (data.length < pageSize) break;
+      from += pageSize;
     }
 
-    const { data } = await query;
-    if (!data || data.length === 0) break;
-    allData = allData.concat(data as Expense[]);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-
-  setExpenses(allData);
-  setLoading(false);
-};
+    setExpenses(allData);
+    setLoading(false);
+  };
 
   useEffect(() => {
     loadExpenses();
@@ -430,6 +433,26 @@ const loadExpenses = async () => {
   const handleUpdateExpense = async (updatedExpense: Expense) => {
     if (!supabase) return;
 
+    // Check if rule-related fields changed
+    const ruleFieldsChanged = originalExpense && (
+    updatedExpense.category_id !== originalExpense.category_id ||
+    updatedExpense.frequency !== originalExpense.frequency ||
+    updatedExpense.amount_type !== originalExpense.amount_type);
+
+
+    if (ruleFieldsChanged) {
+      // Save pending update and ask about rule
+      setPendingExpenseUpdate(updatedExpense);
+      setShowSaveRulePrompt(true);
+      return;
+    }
+
+    await saveExpenseToDb(updatedExpense);
+  };
+
+  const saveExpenseToDb = async (updatedExpense: Expense) => {
+    if (!supabase) return;
+
     const { error } = await supabase.
     from('expenses').
     update({
@@ -452,7 +475,65 @@ const loadExpenses = async () => {
       prev.map((e) => e.id === updatedExpense.id ? updatedExpense : e)
       );
       setEditingExpense(null);
+      setOriginalExpense(null);
     }
+  };
+
+  const handleSaveWithRule = async () => {
+    if (!supabase || !household || !pendingExpenseUpdate) return;
+
+    // Check if rule exists
+    const existingRule = expenseRules.find(
+      (rule) => rule.expense_name.toLowerCase() === pendingExpenseUpdate.name.trim().toLowerCase()
+    );
+
+    if (existingRule) {
+      // Update existing rule
+      await supabase.
+      from('expense_rules').
+      update({
+        category_id: pendingExpenseUpdate.category_id || null,
+        frequency: pendingExpenseUpdate.frequency,
+        amount_type: pendingExpenseUpdate.amount_type,
+        expense_type: pendingExpenseUpdate.expense_type,
+        payment_method: pendingExpenseUpdate.payment_method,
+        credit_card_id: pendingExpenseUpdate.credit_card_id || null,
+        notes: pendingExpenseUpdate.notes
+      }).
+      eq('id', existingRule.id);
+    } else {
+      // Create new rule
+      await supabase.from('expense_rules').insert({
+        household_id: household.id,
+        expense_name: pendingExpenseUpdate.name.trim(),
+        category_id: pendingExpenseUpdate.category_id || null,
+        frequency: pendingExpenseUpdate.frequency,
+        amount_type: pendingExpenseUpdate.amount_type,
+        expense_type: pendingExpenseUpdate.expense_type,
+        payment_method: pendingExpenseUpdate.payment_method,
+        credit_card_id: pendingExpenseUpdate.credit_card_id || null,
+        notes: pendingExpenseUpdate.notes
+      });
+    }
+
+    // Save expense and refresh
+    await saveExpenseToDb(pendingExpenseUpdate);
+    setShowSaveRulePrompt(false);
+    setPendingExpenseUpdate(null);
+    refreshData();
+  };
+
+  const handleSaveWithoutRule = async () => {
+    if (pendingExpenseUpdate) {
+      await saveExpenseToDb(pendingExpenseUpdate);
+    }
+    setShowSaveRulePrompt(false);
+    setPendingExpenseUpdate(null);
+  };
+
+  const startEditingExpense = (expense: Expense) => {
+    setEditingExpense(expense);
+    setOriginalExpense({ ...expense });
   };
 
   // Bulk operations
@@ -1023,8 +1104,8 @@ const loadExpenses = async () => {
                       )}
                         <td data-ev-id="ev_4c5d322ae0" className="p-3">
                           <div data-ev-id="ev_ed1c936f02" className="flex gap-2 justify-end">
-                            <button data-ev-id="ev_005b65955a"
-                          onClick={() => setEditingExpense(expense)}
+                            <button data-ev-id="ev_caf622507e"
+                          onClick={() => startEditingExpense(expense)}
                           className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
 
                               <Edit2 className="w-4 h-4" />
@@ -1128,16 +1209,53 @@ const loadExpenses = async () => {
                 value={editingExpense.notes || ''}
                 onChange={(e) => setEditingExpense({ ...editingExpense, notes: e.target.value })} />
 
+                {/* Rule indicator */}
+                {expenseRules.find((r) => r.expense_name.toLowerCase() === editingExpense.name.trim().toLowerCase()) ?
+              <div data-ev-id="ev_58f3286d8e" className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-500/10 rounded-lg p-3">
+                    <BookOpen className="w-4 h-4" />
+                    <span data-ev-id="ev_06a42658f7">קיים כלל להוצאה זו</span>
+                  </div> :
+
+              <div data-ev-id="ev_25f21acc11" className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    <BookOpen className="w-4 h-4" />
+                    <span data-ev-id="ev_2a55fd9421">אין כלל להוצאה זו</span>
+                  </div>
+              }
+
                 {editingExpense.created_at &&
-              <p data-ev-id="ev_b0788aa17f" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+              <p data-ev-id="ev_6196e36e5a" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
                   נוצר בתאריך {new Date(editingExpense.created_at).toLocaleDateString('he-IL')} בשעה {new Date(editingExpense.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               }
 
-                <div data-ev-id="ev_7c50b53728" className="flex gap-3 mt-4">
+                <div data-ev-id="ev_8ccc210837" className="flex gap-3 mt-4">
                   <Button onClick={() => handleUpdateExpense(editingExpense)}>שמור</Button>
                   <Button variant="outline" onClick={() => setEditingExpense(null)}>ביטול</Button>
                 </div>
+              </div>
+            </Card>
+          </div>
+        }
+
+        {/* Save as rule prompt */}
+        {showSaveRulePrompt && pendingExpenseUpdate &&
+        <div data-ev-id="ev_341309f55f" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]" onClick={() => {
+          setShowSaveRulePrompt(false);
+          setPendingExpenseUpdate(null);
+        }}>
+            <Card className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h3 data-ev-id="ev_794e089a8d" className="text-lg font-bold text-foreground mb-4">שמירת כלל</h3>
+              <p data-ev-id="ev_f0a733e21c" className="text-muted-foreground mb-6">
+                שינית את הקטגוריה, התדירות או סוג הסכום.
+                האם לשמור את זה ככלל להוצאות עתידיות בשם "{pendingExpenseUpdate.name}"?
+              </p>
+              <div data-ev-id="ev_e5722d2147" className="flex gap-3">
+                <Button onClick={handleSaveWithRule}>
+                  כן, שמור ככלל
+                </Button>
+                <Button variant="outline" onClick={handleSaveWithoutRule}>
+                  לא, רק להוצאה זו
+                </Button>
               </div>
             </Card>
           </div>

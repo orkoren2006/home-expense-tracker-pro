@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Filter, Edit2, Trash2, Download, Plus, X, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square } from 'lucide-react';
+import { Search, Filter, Edit2, Trash2, Download, Plus, X, ArrowUpDown, ArrowUp, ArrowDown, CheckSquare, Square, BookOpen } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -24,6 +24,9 @@ export default function Incomes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [showFilters, setShowFilters] = useState(true);
   const [editingIncome, setEditingIncome] = useState<Income | null>(null);
+  const [originalIncome, setOriginalIncome] = useState<Income | null>(null);
+  const [showSaveRulePrompt, setShowSaveRulePrompt] = useState(false);
+  const [pendingIncomeUpdate, setPendingIncomeUpdate] = useState<Income | null>(null);
 
   // Filters - default to current month
   const [filterMonth, setFilterMonth] = useState(() => {
@@ -112,36 +115,36 @@ export default function Incomes() {
   const [rememberRule, setRememberRule] = useState(true);
   const [hasExistingRule, setHasExistingRule] = useState(false);
 
-const loadIncomes = async () => {
-  if (!supabase || !household) return;
+  const loadIncomes = async () => {
+    if (!supabase || !household) return;
 
-  setLoading(true);
-  let allData: Income[] = [];
-  let from = 0;
-  const pageSize = 1000;
+    setLoading(true);
+    let allData: Income[] = [];
+    let from = 0;
+    const pageSize = 1000;
 
-  while (true) {
-    let query = supabase
-      .from('incomes')
-      .select('*')
-      .eq('household_id', household.id)
-      .order('date', { ascending: false })
-      .range(from, from + pageSize - 1);
+    while (true) {
+      let query = supabase.
+      from('incomes').
+      select('*').
+      eq('household_id', household.id).
+      order('date', { ascending: false }).
+      range(from, from + pageSize - 1);
 
-    if (filterMonth) {
-      query = query.eq('billing_month', filterMonth);
+      if (filterMonth) {
+        query = query.eq('billing_month', filterMonth);
+      }
+
+      const { data } = await query;
+      if (!data || data.length === 0) break;
+      allData = allData.concat(data as Income[]);
+      if (data.length < pageSize) break;
+      from += pageSize;
     }
 
-    const { data } = await query;
-    if (!data || data.length === 0) break;
-    allData = allData.concat(data as Income[]);
-    if (data.length < pageSize) break;
-    from += pageSize;
-  }
-
-  setIncomes(allData);
-  setLoading(false);
-};
+    setIncomes(allData);
+    setLoading(false);
+  };
 
   useEffect(() => {
     loadIncomes();
@@ -476,6 +479,25 @@ const loadIncomes = async () => {
   const handleUpdateIncome = async (updatedIncome: Income) => {
     if (!supabase) return;
 
+    // Check if rule-related fields changed
+    const ruleFieldsChanged = originalIncome && (
+    updatedIncome.frequency !== originalIncome.frequency ||
+    updatedIncome.amount_type !== originalIncome.amount_type ||
+    updatedIncome.source !== originalIncome.source);
+
+
+    if (ruleFieldsChanged) {
+      setPendingIncomeUpdate(updatedIncome);
+      setShowSaveRulePrompt(true);
+      return;
+    }
+
+    await saveIncomeToDb(updatedIncome);
+  };
+
+  const saveIncomeToDb = async (updatedIncome: Income) => {
+    if (!supabase) return;
+
     const { error } = await supabase.
     from('incomes').
     update({
@@ -494,7 +516,57 @@ const loadIncomes = async () => {
     if (!error) {
       setIncomes((prev) => prev.map((e) => e.id === updatedIncome.id ? updatedIncome : e));
       setEditingIncome(null);
+      setOriginalIncome(null);
     }
+  };
+
+  const handleSaveWithRule = async () => {
+    if (!supabase || !household || !pendingIncomeUpdate) return;
+
+    const existingRule = incomeRules.find(
+      (rule) => rule.income_name.toLowerCase() === pendingIncomeUpdate.name.trim().toLowerCase()
+    );
+
+    if (existingRule) {
+      await supabase.
+      from('income_rules').
+      update({
+        frequency: pendingIncomeUpdate.frequency,
+        amount_type: pendingIncomeUpdate.amount_type,
+        payment_method: pendingIncomeUpdate.payment_method,
+        source: pendingIncomeUpdate.source,
+        notes: pendingIncomeUpdate.notes
+      }).
+      eq('id', existingRule.id);
+    } else {
+      await supabase.from('income_rules').insert({
+        household_id: household.id,
+        income_name: pendingIncomeUpdate.name.trim(),
+        frequency: pendingIncomeUpdate.frequency,
+        amount_type: pendingIncomeUpdate.amount_type,
+        payment_method: pendingIncomeUpdate.payment_method,
+        source: pendingIncomeUpdate.source,
+        notes: pendingIncomeUpdate.notes
+      });
+    }
+
+    await saveIncomeToDb(pendingIncomeUpdate);
+    setShowSaveRulePrompt(false);
+    setPendingIncomeUpdate(null);
+    refreshData();
+  };
+
+  const handleSaveWithoutRule = async () => {
+    if (pendingIncomeUpdate) {
+      await saveIncomeToDb(pendingIncomeUpdate);
+    }
+    setShowSaveRulePrompt(false);
+    setPendingIncomeUpdate(null);
+  };
+
+  const startEditingIncome = (income: Income) => {
+    setEditingIncome(income);
+    setOriginalIncome({ ...income });
   };
 
   const handleExport = () => {
@@ -900,8 +972,8 @@ const loadIncomes = async () => {
                       )}
                           <td data-ev-id="ev_d49ace8991" className="p-3">
                             <div data-ev-id="ev_7a17aa28a9" className="flex gap-2 justify-end">
-                              <button data-ev-id="ev_fafd41329e"
-                          onClick={() => setEditingIncome(income)}
+                              <button data-ev-id="ev_325ab7e6f3"
+                          onClick={() => startEditingIncome(income)}
                           className="p-2 hover:bg-muted rounded-lg text-muted-foreground hover:text-foreground">
 
                                 <Edit2 className="w-4 h-4" />
@@ -979,16 +1051,53 @@ const loadIncomes = async () => {
                 value={editingIncome.notes || ''}
                 onChange={(e) => setEditingIncome({ ...editingIncome, notes: e.target.value })} />
 
+                {/* Rule indicator */}
+                {incomeRules.find((r) => r.income_name.toLowerCase() === editingIncome.name.trim().toLowerCase()) ?
+              <div data-ev-id="ev_6e71b6644d" className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400 bg-green-500/10 rounded-lg p-3">
+                    <BookOpen className="w-4 h-4" />
+                    <span data-ev-id="ev_ba257cd193">קיים כלל להכנסה זו</span>
+                  </div> :
+
+              <div data-ev-id="ev_0bb99b0bda" className="flex items-center gap-2 text-sm text-muted-foreground bg-muted/50 rounded-lg p-3">
+                    <BookOpen className="w-4 h-4" />
+                    <span data-ev-id="ev_04d999acdc">אין כלל להכנסה זו</span>
+                  </div>
+              }
+
                 {editingIncome.created_at &&
-              <p data-ev-id="ev_fa0ea188d8" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
+              <p data-ev-id="ev_3d527db298" className="text-xs text-muted-foreground text-center pt-2 border-t border-border">
                   נוצר בתאריך {new Date(editingIncome.created_at).toLocaleDateString('he-IL')} בשעה {new Date(editingIncome.created_at).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}
                 </p>
               }
 
-                <div data-ev-id="ev_56ab8c25cf" className="flex gap-3">
+                <div data-ev-id="ev_c94d09e481" className="flex gap-3">
                   <Button onClick={() => handleUpdateIncome(editingIncome)}>שמור</Button>
                   <Button variant="outline" onClick={() => setEditingIncome(null)}>ביטול</Button>
                 </div>
+              </div>
+            </Card>
+          </div>
+        }
+
+        {/* Save as rule prompt */}
+        {showSaveRulePrompt && pendingIncomeUpdate &&
+        <div data-ev-id="ev_ad09c1b11d" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]" onClick={() => {
+          setShowSaveRulePrompt(false);
+          setPendingIncomeUpdate(null);
+        }}>
+            <Card className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h3 data-ev-id="ev_13d6575ef6" className="text-lg font-bold text-foreground mb-4">שמירת כלל</h3>
+              <p data-ev-id="ev_11e5875b0f" className="text-muted-foreground mb-6">
+                שינית את התדירות, סוג הסכום או המקור.
+                האם לשמור את זה ככלל להכנסות עתידיות בשם "{pendingIncomeUpdate.name}"?
+              </p>
+              <div data-ev-id="ev_b0aa28df34" className="flex gap-3">
+                <Button onClick={handleSaveWithRule}>
+                  כן, שמור ככלל
+                </Button>
+                <Button variant="outline" onClick={handleSaveWithoutRule}>
+                  לא, רק להכנסה זו
+                </Button>
               </div>
             </Card>
           </div>

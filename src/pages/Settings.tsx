@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Users, CreditCard, Tag, Sliders, Upload, Check, List } from 'lucide-react';
+import { Plus, Trash2, Copy, Users, CreditCard, Tag, Sliders, Upload, Check, List, LogOut } from 'lucide-react';
+import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
@@ -27,6 +28,7 @@ const TAB_STORAGE_KEY = 'settings_active_tab';
 
 export default function Settings() {
   const { household, categories, creditCards, defaultSettings, defaultIncomeSettings, displaySettings, refreshData } = useHousehold();
+  const { signOut } = useAuth();
 
   // Persist tab in localStorage
   const [activeTab, setActiveTab] = useState<SettingsTab>(() => {
@@ -1502,6 +1504,22 @@ export default function Settings() {
                   </p>
                 </div>
               </div>
+            </Card>
+
+            {/* Logout section */}
+            <Card className="border-destructive/20">
+              <h3 data-ev-id="ev_84a1226a53" className="font-semibold text-foreground mb-4">יציאה מהחשבון</h3>
+              <p data-ev-id="ev_624301af83" className="text-sm text-muted-foreground mb-4">
+                לחץ כאן כדי להתנתק מהמערכת
+              </p>
+              <Button
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={signOut}>
+
+                <LogOut className="w-4 h-4 ml-2" />
+                יציאה
+              </Button>
             </Card>
           </div>
         }
