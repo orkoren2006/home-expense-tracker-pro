@@ -14,6 +14,35 @@ export type Database = {
   }
   public: {
     Tables: {
+      bank_balances: {
+        Row: {
+          as_of_date: string
+          balance: number
+          household_id: string
+          updated_at: string
+        }
+        Insert: {
+          as_of_date: string
+          balance: number
+          household_id: string
+          updated_at?: string
+        }
+        Update: {
+          as_of_date?: string
+          balance?: number
+          household_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "bank_balances_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: true
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       categories: {
         Row: {
           color: string | null
@@ -97,6 +126,9 @@ export type Database = {
           id: string
           last_four_digits: string | null
           name: string
+          next_debit_date: string | null
+          next_debit_updated_at: string | null
+          next_total_debit: number | null
           provider: string | null
         }
         Insert: {
@@ -105,6 +137,9 @@ export type Database = {
           id?: string
           last_four_digits?: string | null
           name: string
+          next_debit_date?: string | null
+          next_debit_updated_at?: string | null
+          next_total_debit?: number | null
           provider?: string | null
         }
         Update: {
@@ -113,6 +148,9 @@ export type Database = {
           id?: string
           last_four_digits?: string | null
           name?: string
+          next_debit_date?: string | null
+          next_debit_updated_at?: string | null
+          next_total_debit?: number | null
           provider?: string | null
         }
         Relationships: [

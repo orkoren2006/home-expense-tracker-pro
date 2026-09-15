@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Plus, Trash2, Copy, Users, CreditCard, Tag, Sliders, Upload, Check, List, LogOut } from 'lucide-react';
+import { Plus, Trash2, Copy, Users, CreditCard, Tag, Sliders, Upload, Check, List, LogOut, Edit2, X } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -52,6 +52,8 @@ export default function Settings() {
 
   // Category form
   const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editingCategoryName, setEditingCategoryName] = useState('');
 
   // Credit card form
   const [newCardName, setNewCardName] = useState('');
@@ -227,6 +229,29 @@ export default function Settings() {
     if (!supabase || !confirm('בטוח שברצונך למחוק קטגוריה זו?')) return;
 
     await supabase.from('categories').delete().eq('id', id);
+    await refreshData();
+  };
+
+  const startEditingCategory = (cat: {id: string;name: string;}) => {
+    setEditingCategoryId(cat.id);
+    setEditingCategoryName(cat.name);
+  };
+
+  const cancelEditingCategory = () => {
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
+  };
+
+  const handleUpdateCategory = async () => {
+    if (!supabase || !editingCategoryId || !editingCategoryName.trim()) return;
+
+    await supabase.
+    from('categories').
+    update({ name: editingCategoryName.trim() }).
+    eq('id', editingCategoryId);
+
+    setEditingCategoryId(null);
+    setEditingCategoryName('');
     await refreshData();
   };
 
@@ -795,21 +820,52 @@ export default function Settings() {
 
             {/* Expense categories */}
             <Card>
-              <h3 data-ev-id="ev_ccf3ffd139" className="font-semibold text-foreground mb-4">קטגוריות הוצאות</h3>
-              <div data-ev-id="ev_50a547894c" className="flex flex-wrap gap-2">
+              <h3 data-ev-id="ev_3c0b477552" className="font-semibold text-foreground mb-4">קטגוריות הוצאות</h3>
+              <div data-ev-id="ev_811cd3b2d9" className="flex flex-wrap gap-2">
                 {expenseCategories.map((cat) =>
-              <div data-ev-id="ev_dbd1c746c6"
-              key={cat.id}
-              className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              editingCategoryId === cat.id ?
+              <div data-ev-id="ev_176b454809" key={cat.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+                      <input data-ev-id="ev_1dbd51422f"
+                type="text"
+                value={editingCategoryName}
+                onChange={(e) => setEditingCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUpdateCategory();
+                  if (e.key === 'Escape') cancelEditingCategory();
+                }}
+                className="bg-background border border-border rounded px-2 py-1 text-sm w-32"
+                autoFocus />
 
-                    <span data-ev-id="ev_bb4b35dab6" className="text-foreground">{cat.name}</span>
-                    <button data-ev-id="ev_62ae62d0a3"
+                      <button data-ev-id="ev_53d29f6f5c"
+                onClick={handleUpdateCategory}
+                className="text-green-600 hover:text-green-700">
+
+                        <Check className="w-4 h-4" />
+                      </button>
+                      <button data-ev-id="ev_9f528c7496"
+                onClick={cancelEditingCategory}
+                className="text-muted-foreground hover:text-foreground">
+
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div> :
+
+              <div data-ev-id="ev_ce7b4c0992" key={cat.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+                      <span data-ev-id="ev_e9c3f64635" className="text-foreground">{cat.name}</span>
+                      <button data-ev-id="ev_de41f73bb1"
+                onClick={() => startEditingCategory(cat)}
+                className="text-muted-foreground hover:text-primary">
+
+                        <Edit2 className="w-4 h-4" />
+                      </button>
+                      <button data-ev-id="ev_58e7361ca0"
                 onClick={() => handleDeleteCategory(cat.id)}
                 className="text-muted-foreground hover:text-red-600">
 
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+
               )}
               </div>
             </Card>
