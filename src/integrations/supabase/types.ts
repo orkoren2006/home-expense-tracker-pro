@@ -611,6 +611,50 @@ export type Database = {
         }
         Relationships: []
       }
+      scheduled_cash_flows: {
+        Row: {
+          amount: number
+          created_at: string
+          day_of_month: number
+          end_date: string | null
+          household_id: string
+          id: string
+          name: string
+          notes: string | null
+          start_date: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          day_of_month: number
+          end_date?: string | null
+          household_id: string
+          id?: string
+          name: string
+          notes?: string | null
+          start_date: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          day_of_month?: number
+          end_date?: string | null
+          household_id?: string
+          id?: string
+          name?: string
+          notes?: string | null
+          start_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "scheduled_cash_flows_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

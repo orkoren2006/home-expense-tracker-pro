@@ -1,25 +1,25 @@
 {
-  "summary": "שיפורים בממשק ובלוגיקת כללים",
+  "summary": "מסך תזרים מזומנים חדש",
   "todos": [
     {
       "id": 1,
-      "description": "הסרת ההדר והעברת כפתור יציאה להגדרות",
+      "description": "יצירת טבלת scheduled_cash_flows עם RLS",
       "files": [
-        "src/components/Layout.tsx",
-        "src/pages/Settings.tsx"
+        "supabase/migrations"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "הוספת שאלה לשמירת כלל + סימון קיום כלל במודל עריכה",
+      "description": "יצירת דף CashFlow.tsx והוספת ניווט",
       "files": [
-        "src/pages/Expenses.tsx",
-        "src/pages/Incomes.tsx"
+        "src/pages/CashFlow.tsx",
+        "src/App.tsx",
+        "src/components/Layout.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-14T06:35:05.962Z",
-  "updatedAt": "2026-09-14T06:41:20.091Z"
+  "createdAt": "2026-09-16T09:54:40.854Z",
+  "updatedAt": "2026-09-16T09:56:20.183Z"
 }
