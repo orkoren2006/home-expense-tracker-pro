@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Edit2, Trash2, Plus, FileText, Download, CheckSquare, Square, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
+import { Search, Edit2, Trash2, Plus, FileText, Download, CheckSquare, Square, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, Columns } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -44,6 +44,10 @@ export default function Rules() {
   const [bulkAmountType, setBulkAmountType] = useState('');
   const [bulkExpenseType, setBulkExpenseType] = useState('');
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
+
+  // Column visibility
+  const [showColumnSettings, setShowColumnSettings] = useState(false);
+  const [visibleColumns, setVisibleColumns] = useState<string[]>(['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes']);
 
   // New rule form
   const [newRuleName, setNewRuleName] = useState('');
@@ -470,9 +474,14 @@ export default function Rules() {
             <Button
               variant={showFilters ? 'primary' : 'outline'}
               onClick={() => setShowFilters(!showFilters)}>
-
               <Filter className="w-4 h-4" />
               סינון
+            </Button>
+            <Button
+              variant={showColumnSettings ? 'primary' : 'outline'}
+              onClick={() => setShowColumnSettings(!showColumnSettings)}>
+              <Columns className="w-4 h-4" />
+              עמודות
             </Button>
             {hasActiveFilters &&
             <Button variant="outline" onClick={clearFilters}>
@@ -531,6 +540,43 @@ export default function Rules() {
               ...Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))]
               } />
 
+            </Card>
+          }
+
+          {/* Column settings panel */}
+          {showColumnSettings &&
+          <Card className="mt-3">
+              <p data-ev-id="ev_ba67bfa337" className="text-sm text-muted-foreground mb-3">בחר את העמודות להצגה:</p>
+              <div data-ev-id="ev_a49c4bc8b3" className="flex flex-wrap gap-2">
+                {[
+              { id: 'expense_name', label: 'שם' },
+              { id: 'category', label: 'קטגוריה' },
+              { id: 'frequency', label: 'תדירות' },
+              { id: 'amount_type', label: 'סוג סכום' },
+              { id: 'expense_type', label: 'סוג הוצאה' },
+              { id: 'payment_method', label: 'אמצעי תשלום' },
+              { id: 'credit_card', label: 'כרטיס אשראי' },
+              { id: 'notes', label: 'הערות' }].
+              map((col) =>
+              <label data-ev-id="ev_002c702ed2" key={col.id} className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80">
+                    <input data-ev-id="ev_d241a24990"
+                type="checkbox"
+                checked={visibleColumns.includes(col.id)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setVisibleColumns([...visibleColumns, col.id]);
+                  } else {
+                    if (col.id === 'expense_name') return; // Always show name
+                    setVisibleColumns(visibleColumns.filter((c) => c !== col.id));
+                  }
+                }}
+                disabled={col.id === 'expense_name'}
+                className="rounded" />
+
+                    <span data-ev-id="ev_b7c78ebea2" className="text-sm text-foreground">{col.label}</span>
+                  </label>
+              )}
+              </div>
             </Card>
           }
         </div>
@@ -647,27 +693,55 @@ export default function Rules() {
                       }
                       </button>
                     </th>
-                    <th data-ev-id="ev_4ef0a21e21" className="text-right p-3 text-sm font-medium text-muted-foreground">
-                        <button data-ev-id="ev_b9c24e4dc4" onClick={() => handleSort('expense_name')} className="flex items-center gap-1 hover:text-foreground">
+                    {visibleColumns.includes('expense_name') &&
+                  <th data-ev-id="ev_dfaa16ea54" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        <button data-ev-id="ev_c52e6b742c" onClick={() => handleSort('expense_name')} className="flex items-center gap-1 hover:text-foreground">
                           שם <SortIcon field="expense_name" />
                         </button>
                       </th>
-                    <th data-ev-id="ev_b31fa48741" className="text-right p-3 text-sm font-medium text-muted-foreground hidden md:table-cell">
-                        <button data-ev-id="ev_a69dcfb642" onClick={() => handleSort('category')} className="flex items-center gap-1 hover:text-foreground">
+                  }
+                    {visibleColumns.includes('category') &&
+                  <th data-ev-id="ev_e02f28bc3b" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        <button data-ev-id="ev_95444f4c5b" onClick={() => handleSort('category')} className="flex items-center gap-1 hover:text-foreground">
                           קטגוריה <SortIcon field="category" />
                         </button>
                       </th>
-                    <th data-ev-id="ev_8a7e85ff9d" className="text-right p-3 text-sm font-medium text-muted-foreground hidden lg:table-cell">
-                        <button data-ev-id="ev_d7c84c2007" onClick={() => handleSort('frequency')} className="flex items-center gap-1 hover:text-foreground">
+                  }
+                    {visibleColumns.includes('frequency') &&
+                  <th data-ev-id="ev_1c7cd92677" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        <button data-ev-id="ev_7b9eb4d393" onClick={() => handleSort('frequency')} className="flex items-center gap-1 hover:text-foreground">
                           תדירות <SortIcon field="frequency" />
                         </button>
                       </th>
-                    <th data-ev-id="ev_3d37174584" className="text-right p-3 text-sm font-medium text-muted-foreground hidden lg:table-cell">
-                        <button data-ev-id="ev_4f7684f779" onClick={() => handleSort('expense_type')} className="flex items-center gap-1 hover:text-foreground">
-                          סוג <SortIcon field="expense_type" />
+                  }
+                    {visibleColumns.includes('amount_type') &&
+                  <th data-ev-id="ev_dfb9052746" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        סוג סכום
+                      </th>
+                  }
+                    {visibleColumns.includes('expense_type') &&
+                  <th data-ev-id="ev_35ce6a380c" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        <button data-ev-id="ev_1c1ffcdcef" onClick={() => handleSort('expense_type')} className="flex items-center gap-1 hover:text-foreground">
+                          סוג הוצאה <SortIcon field="expense_type" />
                         </button>
                       </th>
-                    <th data-ev-id="ev_a973cb4cd6" className="p-3"></th>
+                  }
+                    {visibleColumns.includes('payment_method') &&
+                  <th data-ev-id="ev_254a079a37" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        אמצעי תשלום
+                      </th>
+                  }
+                    {visibleColumns.includes('credit_card') &&
+                  <th data-ev-id="ev_780f81f74f" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        כרטיס אשראי
+                      </th>
+                  }
+                    {visibleColumns.includes('notes') &&
+                  <th data-ev-id="ev_3085a1d746" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        הערות
+                      </th>
+                  }
+                    <th data-ev-id="ev_946e271d51" className="p-3"></th>
                   </tr>
                 </thead>
                 <tbody data-ev-id="ev_0203083697" className="divide-y divide-border">
@@ -685,28 +759,54 @@ export default function Rules() {
                           }
                           </button>
                         </td>
-                        <td data-ev-id="ev_a7db131f99" className="p-3">
-                          <p data-ev-id="ev_9870ebeae0" className="font-medium text-foreground">{rule.expense_name}</p>
-                          {rule.notes && <p data-ev-id="ev_5affb0f94c" className="text-xs text-muted-foreground">{rule.notes}</p>}
-                          <p data-ev-id="ev_ee46887578" className="text-sm text-muted-foreground md:hidden">
-                            {category?.name || 'ללא קטגוריה'}
-                          </p>
+                        {visibleColumns.includes('expense_name') &&
+                      <td data-ev-id="ev_c703844347" className="p-3">
+                          <p data-ev-id="ev_d90ce3db6f" className="font-medium text-foreground">{rule.expense_name}</p>
                         </td>
-                        <td data-ev-id="ev_3779ebd6d6" className="p-3 hidden md:table-cell">
+                      }
+                        {visibleColumns.includes('category') &&
+                      <td data-ev-id="ev_43eb4781b9" className="p-3">
                           {category ?
-                        <span data-ev-id="ev_4911f48588" className="bg-primary/10 text-primary px-2 py-1 rounded text-sm">
+                        <span data-ev-id="ev_fe567beea8" className="bg-primary/10 text-primary px-2 py-1 rounded text-sm">
                               {category.name}
                             </span> :
-
-                        <span data-ev-id="ev_61f901dedd" className="text-muted-foreground text-sm">ללא</span>
+                        <span data-ev-id="ev_97a1e4c8de" className="text-muted-foreground text-sm">ללא</span>
                         }
                         </td>
-                        <td data-ev-id="ev_b8bfbfe8b3" className="p-3 text-muted-foreground hidden lg:table-cell">
+                      }
+                        {visibleColumns.includes('frequency') &&
+                      <td data-ev-id="ev_2274379b4a" className="p-3 text-muted-foreground">
                           {frequencyLabels[rule.frequency] || rule.frequency}
                         </td>
-                        <td data-ev-id="ev_f4278c14c6" className="p-3 text-muted-foreground hidden lg:table-cell">
+                      }
+                        {visibleColumns.includes('amount_type') &&
+                      <td data-ev-id="ev_9ce72bdda4" className="p-3 text-muted-foreground">
+                          {amountTypeLabels[rule.amount_type] || rule.amount_type}
+                        </td>
+                      }
+                        {visibleColumns.includes('expense_type') &&
+                      <td data-ev-id="ev_0b745bb8a4" className="p-3 text-muted-foreground">
                           {expenseTypeLabels[rule.expense_type] || rule.expense_type}
                         </td>
+                      }
+                        {visibleColumns.includes('payment_method') &&
+                      <td data-ev-id="ev_9f46f182ae" className="p-3 text-muted-foreground">
+                          {paymentMethodLabels[rule.payment_method] || rule.payment_method}
+                        </td>
+                      }
+                        {visibleColumns.includes('credit_card') &&
+                      <td data-ev-id="ev_40e5b5d44d" className="p-3 text-muted-foreground">
+                          {(() => {
+                          const card = creditCards.find((c) => c.id === rule.credit_card_id);
+                          return card ? `${card.name}${card.last_four_digits ? ` (${card.last_four_digits})` : ''}` : 'ללא';
+                        })()}
+                        </td>
+                      }
+                        {visibleColumns.includes('notes') &&
+                      <td data-ev-id="ev_ea0e8176f7" className="p-3 text-muted-foreground text-sm">
+                          {rule.notes || '-'}
+                        </td>
+                      }
                         <td data-ev-id="ev_b6e5805864" className="p-3">
                           <div data-ev-id="ev_3765c00cf2" className="flex gap-2 justify-end">
                             <button data-ev-id="ev_5dd492de51"

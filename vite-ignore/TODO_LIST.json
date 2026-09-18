@@ -1,25 +1,32 @@
 {
-  "summary": "מסך תזרים מזומנים חדש",
+  "summary": "שלושה שיפורים",
   "todos": [
     {
       "id": 1,
-      "description": "יצירת טבלת scheduled_cash_flows עם RLS",
+      "description": "הוספת פירוט אשראי לפי כרטיס",
       "files": [
-        "supabase/migrations"
+        "src/pages/CashFlow.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "יצירת דף CashFlow.tsx והוספת ניווט",
+      "description": "תיקון יצירת כלל בעריכה מרובה",
       "files": [
-        "src/pages/CashFlow.tsx",
-        "src/App.tsx",
-        "src/components/Layout.tsx"
+        "src/pages/Expenses.tsx",
+        "src/pages/Incomes.tsx"
+      ],
+      "status": "complete"
+    },
+    {
+      "id": 3,
+      "description": "הוספת שליטה בתצוגת עמודות לכללי הוצאות",
+      "files": [
+        "src/pages/Rules.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-16T09:54:40.854Z",
-  "updatedAt": "2026-09-16T09:56:20.183Z"
+  "createdAt": "2026-09-18T11:47:09.208Z",
+  "updatedAt": "2026-09-18T11:54:19.372Z"
 }

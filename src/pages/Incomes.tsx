@@ -47,6 +47,9 @@ export default function Incomes() {
   const [bulkBillingMonth, setBulkBillingMonth] = useState('');
   const [bulkNotes, setBulkNotes] = useState('');
   const [bulkName, setBulkName] = useState('');
+  const [showBulkRulePrompt, setShowBulkRulePrompt] = useState(false);
+  const [pendingBulkRuleNames, setPendingBulkRuleNames] = useState<string[]>([]);
+  const [pendingBulkRuleUpdates, setPendingBulkRuleUpdates] = useState<Partial<Income>>({});
 
   // Sorting - all columns are sortable
   type IncomeSortField = 'name' | 'amount' | 'date' | 'source' | 'payment_method' | 'frequency' | 'amount_type' | 'notes';
@@ -348,12 +351,26 @@ export default function Incomes() {
       return;
     }
 
+    // Check if rule-related fields changed
+    const ruleFieldsChanged = bulkFrequency || bulkAmountType || bulkSource;
+
     const { error } = await supabase.
     from('incomes').
     update(updates).
     in('id', Array.from(selectedIds));
 
     if (!error) {
+      // If rule fields changed, ask about saving rules
+      if (ruleFieldsChanged) {
+        // Get unique income names from selected incomes
+        const selectedIncomes = incomes.filter((inc) => selectedIds.has(inc.id));
+        const uniqueNames = [...new Set(selectedIncomes.map((inc) => inc.name.trim()))];
+
+        setPendingBulkRuleNames(uniqueNames);
+        setPendingBulkRuleUpdates(updates);
+        setShowBulkRulePrompt(true);
+      }
+
       await loadIncomes();
       setSelectedIds(new Set());
       setShowBulkEdit(false);
@@ -366,6 +383,49 @@ export default function Incomes() {
       setBulkName('');
     }
     setLoading(false);
+  };
+
+  const handleBulkSaveRules = async () => {
+    if (!supabase || !household || pendingBulkRuleNames.length === 0) return;
+
+    for (const name of pendingBulkRuleNames) {
+      const existingRule = incomeRules.find(
+        (rule) => rule.income_name.toLowerCase() === name.toLowerCase()
+      );
+
+      const ruleData: Record<string, unknown> = {};
+      if (pendingBulkRuleUpdates.frequency) ruleData.frequency = pendingBulkRuleUpdates.frequency;
+      if (pendingBulkRuleUpdates.amount_type) ruleData.amount_type = pendingBulkRuleUpdates.amount_type;
+      if (pendingBulkRuleUpdates.source) ruleData.source = pendingBulkRuleUpdates.source;
+      if (pendingBulkRuleUpdates.payment_method) ruleData.payment_method = pendingBulkRuleUpdates.payment_method;
+
+      if (existingRule) {
+        await supabase.
+        from('income_rules').
+        update(ruleData).
+        eq('id', existingRule.id);
+      } else {
+        await supabase.from('income_rules').insert({
+          household_id: household.id,
+          income_name: name,
+          frequency: pendingBulkRuleUpdates.frequency || 'monthly',
+          amount_type: pendingBulkRuleUpdates.amount_type || 'fixed',
+          source: pendingBulkRuleUpdates.source || 'salary',
+          payment_method: pendingBulkRuleUpdates.payment_method || 'bank_transfer'
+        });
+      }
+    }
+
+    setShowBulkRulePrompt(false);
+    setPendingBulkRuleNames([]);
+    setPendingBulkRuleUpdates({});
+    refreshData();
+  };
+
+  const handleBulkSkipRules = () => {
+    setShowBulkRulePrompt(false);
+    setPendingBulkRuleNames([]);
+    setPendingBulkRuleUpdates({});
   };
 
   const handleBulkDelete = async () => {
@@ -1091,12 +1151,41 @@ export default function Incomes() {
                 שינית את התדירות, סוג הסכום או המקור.
                 האם לשמור את זה ככלל להכנסות עתידיות בשם "{pendingIncomeUpdate.name}"?
               </p>
-              <div data-ev-id="ev_b0aa28df34" className="flex gap-3">
+              <div data-ev-id="ev_ec37f1033c" className="flex gap-3">
                 <Button onClick={handleSaveWithRule}>
                   כן, שמור ככלל
                 </Button>
                 <Button variant="outline" onClick={handleSaveWithoutRule}>
                   לא, רק להכנסה זו
+                </Button>
+              </div>
+            </Card>
+          </div>
+        }
+
+        {/* Bulk save rules prompt */}
+        {showBulkRulePrompt && pendingBulkRuleNames.length > 0 &&
+        <div data-ev-id="ev_2b117c6056" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]" onClick={handleBulkSkipRules}>
+            <Card className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h3 data-ev-id="ev_0f930b03d7" className="text-lg font-bold text-foreground mb-4">שמירת כללים</h3>
+              <p data-ev-id="ev_3dcbe758a1" className="text-muted-foreground mb-4">
+                שינית את התדירות, סוג הסכום או המקור.
+                האם לשמור את זה ככללים ל-{pendingBulkRuleNames.length} הכנסות?
+              </p>
+              <div data-ev-id="ev_7949a4b451" className="max-h-32 overflow-y-auto mb-4 bg-muted/50 rounded-lg p-2">
+                {pendingBulkRuleNames.slice(0, 10).map((name, i) =>
+              <div data-ev-id="ev_00dd3b380e" key={i} className="text-sm text-foreground py-1">• {name}</div>
+              )}
+                {pendingBulkRuleNames.length > 10 &&
+              <div data-ev-id="ev_b27e48ace9" className="text-sm text-muted-foreground py-1">...+{pendingBulkRuleNames.length - 10} נוספים</div>
+              }
+              </div>
+              <div data-ev-id="ev_31c547b1fb" className="flex gap-3">
+                <Button onClick={handleBulkSaveRules}>
+                  כן, שמור ככללים
+                </Button>
+                <Button variant="outline" onClick={handleBulkSkipRules}>
+                  לא, לדלג
                 </Button>
               </div>
             </Card>

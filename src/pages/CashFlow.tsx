@@ -305,6 +305,15 @@ export default function CashFlow() {
     }).format(amount);
   };
 
+  const formatCurrencyWithCents = (amount: number) => {
+    return new Intl.NumberFormat('he-IL', {
+      style: 'currency',
+      currency: 'ILS',
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount);
+  };
+
   const formatDate = (dateStr: string) => {
     return new Date(dateStr).toLocaleDateString('he-IL');
   };
@@ -401,6 +410,45 @@ export default function CashFlow() {
             </p>
           </Card>
         </div>
+
+        {/* Credit Card Breakdown */}
+        {cardsWithDebit.some((c) => c.next_total_debit !== null && c.next_total_debit > 0) &&
+        <Card>
+            <div data-ev-id="ev_3725e0a977" className="flex items-center gap-3 mb-4">
+              <div data-ev-id="ev_ba2385b265" className="p-2 bg-red-500/20 rounded-lg">
+                <CreditCard className="w-5 h-5 text-red-600" />
+              </div>
+              <h3 data-ev-id="ev_4667875247" className="font-semibold text-foreground">פירוט חיובי אשראי לפי כרטיס</h3>
+            </div>
+            <div data-ev-id="ev_6a89ab1e6a" className="flex flex-col gap-2">
+              {cardsWithDebit.
+            filter((c) => c.next_total_debit !== null && c.next_total_debit > 0).
+            map((card) =>
+            <div data-ev-id="ev_e68f13e946" key={card.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
+                    <div data-ev-id="ev_507a977187" className="flex items-center gap-2">
+                      <span data-ev-id="ev_36f1d1cfd7" className="text-foreground">{card.name}</span>
+                      {card.last_four_digits &&
+                <span data-ev-id="ev_2861613bfe" className="text-xs text-muted-foreground">({card.last_four_digits})</span>
+                }
+                    </div>
+                    <span data-ev-id="ev_ee9b9147ff" className="font-medium text-red-600 font-mono">
+                      {formatCurrencyWithCents(card.next_total_debit || 0)}
+                    </span>
+                  </div>
+            )}
+              <div data-ev-id="ev_015eae7c65" className="flex items-center justify-between py-2 pt-3 border-t-2 border-border font-bold">
+                <span data-ev-id="ev_8511716074" className="text-foreground">סה"כ אשראי</span>
+                <span data-ev-id="ev_e6c7376db3" className="text-red-600 font-mono">
+                  {formatCurrencyWithCents(
+                  cardsWithDebit.
+                  filter((c) => c.next_total_debit !== null).
+                  reduce((sum, c) => sum + (c.next_total_debit || 0), 0)
+                )}
+                </span>
+              </div>
+            </div>
+          </Card>
+        }
 
         {/* Included Items Breakdown */}
         {includedItems.length > 0 &&

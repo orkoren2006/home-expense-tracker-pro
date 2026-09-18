@@ -52,6 +52,9 @@ export default function Expenses() {
   const [bulkBillingMonth, setBulkBillingMonth] = useState('');
   const [bulkNotes, setBulkNotes] = useState('');
   const [bulkName, setBulkName] = useState('');
+  const [showBulkRulePrompt, setShowBulkRulePrompt] = useState(false);
+  const [pendingBulkRuleNames, setPendingBulkRuleNames] = useState<string[]>([]);
+  const [pendingBulkRuleUpdates, setPendingBulkRuleUpdates] = useState<Partial<Expense>>({});
 
   // Sorting - all columns are sortable
   type ExpenseSortField = 'name' | 'amount' | 'date' | 'category' | 'credit_card' | 'payment_method' | 'frequency' | 'expense_type' | 'amount_type' | 'notes';
@@ -578,12 +581,26 @@ export default function Expenses() {
       return;
     }
 
+    // Check if rule-related fields changed
+    const ruleFieldsChanged = bulkCategoryId || bulkFrequency || bulkAmountType;
+
     const { error } = await supabase.
     from('expenses').
     update(updates).
     in('id', Array.from(selectedIds));
 
     if (!error) {
+      // If rule fields changed, ask about saving rules
+      if (ruleFieldsChanged) {
+        // Get unique expense names from selected expenses
+        const selectedExpenses = expenses.filter((e) => selectedIds.has(e.id));
+        const uniqueNames = [...new Set(selectedExpenses.map((e) => e.name.trim()))];
+
+        setPendingBulkRuleNames(uniqueNames);
+        setPendingBulkRuleUpdates(updates);
+        setShowBulkRulePrompt(true);
+      }
+
       await loadExpenses();
       setSelectedIds(new Set());
       setShowBulkEdit(false);
@@ -598,6 +615,53 @@ export default function Expenses() {
       setBulkName('');
     }
     setLoading(false);
+  };
+
+  const handleBulkSaveRules = async () => {
+    if (!supabase || !household || pendingBulkRuleNames.length === 0) return;
+
+    for (const name of pendingBulkRuleNames) {
+      const existingRule = expenseRules.find(
+        (rule) => rule.expense_name.toLowerCase() === name.toLowerCase()
+      );
+
+      const ruleData: Record<string, unknown> = {};
+      if (pendingBulkRuleUpdates.category_id !== undefined) ruleData.category_id = pendingBulkRuleUpdates.category_id;
+      if (pendingBulkRuleUpdates.frequency) ruleData.frequency = pendingBulkRuleUpdates.frequency;
+      if (pendingBulkRuleUpdates.amount_type) ruleData.amount_type = pendingBulkRuleUpdates.amount_type;
+      if (pendingBulkRuleUpdates.expense_type) ruleData.expense_type = pendingBulkRuleUpdates.expense_type;
+      if (pendingBulkRuleUpdates.payment_method) ruleData.payment_method = pendingBulkRuleUpdates.payment_method;
+      if (pendingBulkRuleUpdates.credit_card_id !== undefined) ruleData.credit_card_id = pendingBulkRuleUpdates.credit_card_id;
+
+      if (existingRule) {
+        await supabase.
+        from('expense_rules').
+        update(ruleData).
+        eq('id', existingRule.id);
+      } else {
+        await supabase.from('expense_rules').insert({
+          household_id: household.id,
+          expense_name: name,
+          category_id: pendingBulkRuleUpdates.category_id || null,
+          frequency: pendingBulkRuleUpdates.frequency || 'one_time',
+          amount_type: pendingBulkRuleUpdates.amount_type || 'variable',
+          expense_type: pendingBulkRuleUpdates.expense_type || 'optional',
+          payment_method: pendingBulkRuleUpdates.payment_method || 'credit',
+          credit_card_id: pendingBulkRuleUpdates.credit_card_id || null
+        });
+      }
+    }
+
+    setShowBulkRulePrompt(false);
+    setPendingBulkRuleNames([]);
+    setPendingBulkRuleUpdates({});
+    refreshData();
+  };
+
+  const handleBulkSkipRules = () => {
+    setShowBulkRulePrompt(false);
+    setPendingBulkRuleNames([]);
+    setPendingBulkRuleUpdates({});
   };
 
   const handleBulkDelete = async () => {
@@ -1249,12 +1313,41 @@ export default function Expenses() {
                 שינית את הקטגוריה, התדירות או סוג הסכום.
                 האם לשמור את זה ככלל להוצאות עתידיות בשם "{pendingExpenseUpdate.name}"?
               </p>
-              <div data-ev-id="ev_e5722d2147" className="flex gap-3">
+              <div data-ev-id="ev_0228e96834" className="flex gap-3">
                 <Button onClick={handleSaveWithRule}>
                   כן, שמור ככלל
                 </Button>
                 <Button variant="outline" onClick={handleSaveWithoutRule}>
                   לא, רק להוצאה זו
+                </Button>
+              </div>
+            </Card>
+          </div>
+        }
+
+        {/* Bulk save rules prompt */}
+        {showBulkRulePrompt && pendingBulkRuleNames.length > 0 &&
+        <div data-ev-id="ev_3bc2d57d3a" className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-[60]" onClick={handleBulkSkipRules}>
+            <Card className="w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+              <h3 data-ev-id="ev_0772204d2f" className="text-lg font-bold text-foreground mb-4">שמירת כללים</h3>
+              <p data-ev-id="ev_5b87c31c9b" className="text-muted-foreground mb-4">
+                שינית את הקטגוריה, התדירות או סוג הסכום.
+                האם לשמור את זה ככללים ל-{pendingBulkRuleNames.length} הוצאות?
+              </p>
+              <div data-ev-id="ev_8769843a88" className="max-h-32 overflow-y-auto mb-4 bg-muted/50 rounded-lg p-2">
+                {pendingBulkRuleNames.slice(0, 10).map((name, i) =>
+              <div data-ev-id="ev_f77f841755" key={i} className="text-sm text-foreground py-1">• {name}</div>
+              )}
+                {pendingBulkRuleNames.length > 10 &&
+              <div data-ev-id="ev_b161865bc5" className="text-sm text-muted-foreground py-1">...+{pendingBulkRuleNames.length - 10} נוספים</div>
+              }
+              </div>
+              <div data-ev-id="ev_d791193091" className="flex gap-3">
+                <Button onClick={handleBulkSaveRules}>
+                  כן, שמור ככללים
+                </Button>
+                <Button variant="outline" onClick={handleBulkSkipRules}>
+                  לא, לדלג
                 </Button>
               </div>
             </Card>
