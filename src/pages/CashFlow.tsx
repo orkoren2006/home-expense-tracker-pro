@@ -359,9 +359,10 @@ export default function CashFlow() {
               {bankBalance ? formatCurrency(bankBalance.balance) : '—'}
             </p>
             {bankBalance &&
-            <p data-ev-id="ev_5a1413f3ff" className="text-xs text-muted-foreground mt-1">
-                נכון ל-{formatDate(bankBalance.as_of_date)}
-              </p>
+            <div data-ev-id="ev_45232bfb72" className="text-xs text-muted-foreground mt-1 flex flex-col gap-0.5">
+                <span data-ev-id="ev_f4e0d975bc">נכון ל-{formatDate(bankBalance.as_of_date)}</span>
+                <span data-ev-id="ev_e73d6b28fb">עודכן: {formatDate(bankBalance.updated_at)}</span>
+              </div>
             }
           </Card>
 
@@ -414,11 +415,21 @@ export default function CashFlow() {
         {/* Credit Card Breakdown */}
         {cardsWithDebit.some((c) => c.next_total_debit !== null && c.next_total_debit > 0) &&
         <Card>
-            <div data-ev-id="ev_3725e0a977" className="flex items-center gap-3 mb-4">
-              <div data-ev-id="ev_ba2385b265" className="p-2 bg-red-500/20 rounded-lg">
-                <CreditCard className="w-5 h-5 text-red-600" />
+            <div data-ev-id="ev_178736634c" className="flex items-center justify-between mb-4">
+              <div data-ev-id="ev_6eedd67c6c" className="flex items-center gap-3">
+                <div data-ev-id="ev_76f392cdd7" className="p-2 bg-red-500/20 rounded-lg">
+                  <CreditCard className="w-5 h-5 text-red-600" />
+                </div>
+                <h3 data-ev-id="ev_9b01d64d9a" className="font-semibold text-foreground">פירוט חיובי אשראי לפי כרטיס</h3>
               </div>
-              <h3 data-ev-id="ev_4667875247" className="font-semibold text-foreground">פירוט חיובי אשראי לפי כרטיס</h3>
+              {(() => {
+              const latestUpdate = cardsWithDebit.
+              filter((c) => c.next_debit_updated_at).
+              sort((a, b) => new Date(b.next_debit_updated_at!).getTime() - new Date(a.next_debit_updated_at!).getTime())[0];
+              return latestUpdate?.next_debit_updated_at ?
+              <span data-ev-id="ev_6cdb24a94b" className="text-xs text-muted-foreground">עודכן: {formatDate(latestUpdate.next_debit_updated_at)}</span> :
+              null;
+            })()}
             </div>
             <div data-ev-id="ev_6a89ab1e6a" className="flex flex-col gap-2">
               {cardsWithDebit.

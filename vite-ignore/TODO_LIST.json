@@ -1,32 +1,33 @@
 {
-  "summary": "שלושה שיפורים",
+  "summary": "שלושה תיקונים ושיפורים",
   "todos": [
     {
       "id": 1,
-      "description": "הוספת פירוט אשראי לפי כרטיס",
+      "description": "תיקון עדכון מרובה להוצאות עם אותו שם",
+      "files": [
+        "src/pages/Expenses.tsx"
+      ],
+      "status": "complete"
+    },
+    {
+      "id": 2,
+      "description": "הוספת תאריך עדכון אחרון ליתרה ולאשראי",
       "files": [
         "src/pages/CashFlow.tsx"
       ],
       "status": "complete"
     },
     {
-      "id": 2,
-      "description": "תיקון יצירת כלל בעריכה מרובה",
-      "files": [
-        "src/pages/Expenses.tsx",
-        "src/pages/Incomes.tsx"
-      ],
-      "status": "complete"
-    },
-    {
       "id": 3,
-      "description": "הוספת שליטה בתצוגת עמודות לכללי הוצאות",
+      "description": "העברת הגדרות עמודות כללים להגדרות",
       "files": [
-        "src/pages/Rules.tsx"
+        "src/pages/Settings.tsx",
+        "src/pages/Rules.tsx",
+        "src/types/index.ts"
       ],
-      "status": "complete"
+      "status": "active"
     }
   ],
-  "createdAt": "2026-09-18T11:47:09.208Z",
-  "updatedAt": "2026-09-18T11:54:19.372Z"
+  "createdAt": "2026-09-19T20:39:12.573Z",
+  "updatedAt": "2026-09-19T20:40:43.020Z"
 }

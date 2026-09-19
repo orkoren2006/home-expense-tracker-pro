@@ -584,10 +584,11 @@ export default function Expenses() {
     // Check if rule-related fields changed
     const ruleFieldsChanged = bulkCategoryId || bulkFrequency || bulkAmountType;
 
-    const { error } = await supabase.
-    from('expenses').
-    update(updates).
-    in('id', Array.from(selectedIds));
+    const idsArray = Array.from(selectedIds);
+    const { error } = await supabase
+      .from('expenses')
+      .update(updates)
+      .in('id', idsArray);
 
     if (!error) {
       // If rule fields changed, ask about saving rules
