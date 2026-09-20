@@ -1,33 +1,35 @@
 {
-  "summary": "שלושה תיקונים ושיפורים",
+  "summary": "השלמת עבודה קודמת + עמוד הערות חדש",
   "todos": [
     {
       "id": 1,
-      "description": "תיקון עדכון מרובה להוצאות עם אותו שם",
+      "description": "השלמת הגדרות עמודות כללים + מיגרציה",
       "files": [
-        "src/pages/Expenses.tsx"
+        "supabase migration",
+        "src/types/index.ts"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "הוספת תאריך עדכון אחרון ליתרה ולאשראי",
+      "description": "העברת UI עמודות כללים להגדרות",
       "files": [
-        "src/pages/CashFlow.tsx"
+        "src/pages/Settings.tsx",
+        "src/pages/Rules.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 3,
-      "description": "העברת הגדרות עמודות כללים להגדרות",
+      "description": "יצירת עמוד הערות חדש עם תיוג חודשי",
       "files": [
-        "src/pages/Settings.tsx",
-        "src/pages/Rules.tsx",
-        "src/types/index.ts"
+        "supabase migration",
+        "src/pages/Notes.tsx",
+        "src/components/Layout.tsx"
       ],
-      "status": "active"
+      "status": "complete"
     }
   ],
-  "createdAt": "2026-09-19T20:39:12.573Z",
-  "updatedAt": "2026-09-19T20:40:43.020Z"
+  "createdAt": "2026-09-20T07:13:20.349Z",
+  "updatedAt": "2026-09-20T07:17:42.155Z"
 }

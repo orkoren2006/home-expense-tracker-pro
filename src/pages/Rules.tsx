@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Edit2, Trash2, Plus, FileText, Download, CheckSquare, Square, Filter, X, ArrowUpDown, ArrowUp, ArrowDown, Columns } from 'lucide-react';
+import { Search, Edit2, Trash2, Plus, FileText, Download, CheckSquare, Square, Filter, X, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
@@ -17,7 +17,7 @@ import {
 '@/types';
 
 export default function Rules() {
-  const { household, categories, creditCards, classificationOptions, refreshData } = useHousehold();
+  const { household, categories, creditCards, classificationOptions, displaySettings, refreshData } = useHousehold();
   const [rules, setRules] = useState<ExpenseRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -45,9 +45,8 @@ export default function Rules() {
   const [bulkExpenseType, setBulkExpenseType] = useState('');
   const [bulkPaymentMethod, setBulkPaymentMethod] = useState('');
 
-  // Column visibility
-  const [showColumnSettings, setShowColumnSettings] = useState(false);
-  const [visibleColumns, setVisibleColumns] = useState<string[]>(['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes']);
+  // Column visibility from display settings
+  const visibleColumns = displaySettings?.expense_rules_columns || ['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes'];
 
   // New rule form
   const [newRuleName, setNewRuleName] = useState('');
@@ -477,12 +476,6 @@ export default function Rules() {
               <Filter className="w-4 h-4" />
               סינון
             </Button>
-            <Button
-              variant={showColumnSettings ? 'primary' : 'outline'}
-              onClick={() => setShowColumnSettings(!showColumnSettings)}>
-              <Columns className="w-4 h-4" />
-              עמודות
-            </Button>
             {hasActiveFilters &&
             <Button variant="outline" onClick={clearFilters}>
                 <X className="w-4 h-4" />
@@ -543,42 +536,6 @@ export default function Rules() {
             </Card>
           }
 
-          {/* Column settings panel */}
-          {showColumnSettings &&
-          <Card className="mt-3">
-              <p data-ev-id="ev_ba67bfa337" className="text-sm text-muted-foreground mb-3">בחר את העמודות להצגה:</p>
-              <div data-ev-id="ev_a49c4bc8b3" className="flex flex-wrap gap-2">
-                {[
-              { id: 'expense_name', label: 'שם' },
-              { id: 'category', label: 'קטגוריה' },
-              { id: 'frequency', label: 'תדירות' },
-              { id: 'amount_type', label: 'סוג סכום' },
-              { id: 'expense_type', label: 'סוג הוצאה' },
-              { id: 'payment_method', label: 'אמצעי תשלום' },
-              { id: 'credit_card', label: 'כרטיס אשראי' },
-              { id: 'notes', label: 'הערות' }].
-              map((col) =>
-              <label data-ev-id="ev_002c702ed2" key={col.id} className="flex items-center gap-2 px-3 py-2 bg-muted rounded-lg cursor-pointer hover:bg-muted/80">
-                    <input data-ev-id="ev_d241a24990"
-                type="checkbox"
-                checked={visibleColumns.includes(col.id)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setVisibleColumns([...visibleColumns, col.id]);
-                  } else {
-                    if (col.id === 'expense_name') return; // Always show name
-                    setVisibleColumns(visibleColumns.filter((c) => c !== col.id));
-                  }
-                }}
-                disabled={col.id === 'expense_name'}
-                className="rounded" />
-
-                    <span data-ev-id="ev_b7c78ebea2" className="text-sm text-foreground">{col.label}</span>
-                  </label>
-              )}
-              </div>
-            </Card>
-          }
         </div>
 
         {/* Bulk actions */}

@@ -260,6 +260,7 @@ export type Database = {
         Row: {
           created_at: string
           expense_columns: Json
+          expense_rules_columns: string[]
           household_id: string
           id: string
           income_columns: Json
@@ -268,6 +269,7 @@ export type Database = {
         Insert: {
           created_at?: string
           expense_columns?: Json
+          expense_rules_columns?: string[]
           household_id: string
           id?: string
           income_columns?: Json
@@ -276,6 +278,7 @@ export type Database = {
         Update: {
           created_at?: string
           expense_columns?: Json
+          expense_rules_columns?: string[]
           household_id?: string
           id?: string
           income_columns?: Json
@@ -586,6 +589,44 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "incomes_household_id_fkey"
+            columns: ["household_id"]
+            isOneToOne: false
+            referencedRelation: "households"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          content: string
+          created_at: string
+          household_id: string
+          id: string
+          month: string | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          content: string
+          created_at?: string
+          household_id: string
+          id?: string
+          month?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          content?: string
+          created_at?: string
+          household_id?: string
+          id?: string
+          month?: string | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_household_id_fkey"
             columns: ["household_id"]
             isOneToOne: false
             referencedRelation: "households"

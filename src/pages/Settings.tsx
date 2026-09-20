@@ -19,7 +19,8 @@ import {
   INCOME_SOURCE_LABELS,
   INCOME_PAYMENT_METHOD_LABELS,
   EXPENSE_COLUMN_OPTIONS,
-  INCOME_COLUMN_OPTIONS } from
+  INCOME_COLUMN_OPTIONS,
+  EXPENSE_RULES_COLUMN_OPTIONS } from
 '@/types';
 
 type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import';
@@ -99,6 +100,9 @@ export default function Settings() {
   const [incomeColumns, setIncomeColumns] = useState<string[]>(
     displaySettings?.income_columns || ['name', 'amount', 'date', 'source']
   );
+  const [expenseRulesColumns, setExpenseRulesColumns] = useState<string[]>(
+    displaySettings?.expense_rules_columns || ['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes']
+  );
 
   // Import rules preview state
   type ImportRulesType = 'expense' | 'income';
@@ -162,6 +166,9 @@ export default function Settings() {
     if (displaySettings) {
       setExpenseColumns(displaySettings.expense_columns);
       setIncomeColumns(displaySettings.income_columns);
+      if (displaySettings.expense_rules_columns) {
+        setExpenseRulesColumns(displaySettings.expense_rules_columns);
+      }
     }
   }, [displaySettings]);
 
@@ -328,7 +335,8 @@ export default function Settings() {
       {
         household_id: household.id,
         expense_columns: expenseColumns,
-        income_columns: incomeColumns
+        income_columns: incomeColumns,
+        expense_rules_columns: expenseRulesColumns
       },
       { onConflict: 'household_id' }
     );
@@ -353,6 +361,17 @@ export default function Settings() {
     if (option && 'required' in option && option.required) return; // Can't toggle required columns
 
     setIncomeColumns((prev) =>
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
+    );
+  };
+
+  const toggleExpenseRulesColumn = (key: string) => {
+    const option = EXPENSE_RULES_COLUMN_OPTIONS.find((o) => o.key === key);
+    if (option && 'required' in option && option.required) return;
+
+    setExpenseRulesColumns((prev) =>
     prev.includes(key) ?
     prev.filter((k) => k !== key) :
     [...prev, key]
@@ -1299,6 +1318,32 @@ export default function Settings() {
                       'bg-background text-muted-foreground border-border hover:border-primary'} ${
                       isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
 
+                        {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                        {option.label}
+                        {isRequired && ' (חובה)'}
+                      </button>);
+
+                  })}
+                </div>
+              </div>
+
+              {/* Expense rules columns */}
+              <div data-ev-id="ev_bd69d6afec">
+                <h4 data-ev-id="ev_82666e61a9" className="font-medium text-foreground mb-3">שדות כללי הוצאות</h4>
+                <div data-ev-id="ev_093c57c9de" className="flex flex-wrap gap-2">
+                  {EXPENSE_RULES_COLUMN_OPTIONS.map((option) => {
+                    const isSelected = expenseRulesColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as {required?: boolean;}).required : false;
+                    return (
+                      <button data-ev-id="ev_3d0990dca4"
+                      key={option.key}
+                      onClick={() => toggleExpenseRulesColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
+                      isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${
+                      isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
                         {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                         {option.label}
                         {isRequired && ' (חובה)'}
