@@ -106,16 +106,27 @@ export default function Home() {
       const currentDay = today.getDate();
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-      // Helper to extract month string (YYYY-MM) from date
+      // Helper to extract month string (YYYY-MM) from date - parse directly to avoid timezone issues
       const getMonthFromDate = (dateStr: string): string => {
-        // Handle ISO format (YYYY-MM-DD) or other formats
-        const date = new Date(dateStr);
+        // Parse ISO format (YYYY-MM-DD) directly from string
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length >= 2) {
+          return `${parts[0]}-${parts[1]}`;
+        }
+        // Fallback for other formats
+        const date = new Date(dateStr + 'T12:00:00');
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
 
-      // Helper to extract day from date string
+      // Helper to extract day from date string - parse directly to avoid timezone issues
       const getDayFromDate = (dateStr: string): number => {
-        const date = new Date(dateStr);
+        // Parse ISO format (YYYY-MM-DD) directly from string
+        const parts = dateStr.split('T')[0].split('-');
+        if (parts.length >= 3) {
+          return parseInt(parts[2], 10);
+        }
+        // Fallback for other formats
+        const date = new Date(dateStr + 'T12:00:00');
         return date.getDate();
       };
 
