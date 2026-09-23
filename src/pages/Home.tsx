@@ -97,7 +97,7 @@ export default function Home() {
     loadData();
   }, [household, selectedMonth]);
 
-  // Load credit insights - responsive to range mode
+  // Load credit insights - based on transaction DATE, not billing_month
   useEffect(() => {
     if (!supabase || !household) return;
 
@@ -106,46 +106,26 @@ export default function Home() {
       const currentDay = today.getDate();
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-      // Helper to calculate "up to this day" amount from expenses
-      const calcUpToDay = (expenses: Expense[], dayOfMonth: number): number => {
-        return expenses.
-        filter((e) => {
-          if (!e.date) return true; // Include if no specific date
-          // Parse date - handle both ISO format and other formats
-          const dateStr = e.date;
-          const expDay = new Date(dateStr).getDate();
-          return expDay <= dayOfMonth;
-        }).
-        reduce((sum, e) => sum + Number(e.amount), 0);
+      // Helper to extract month string (YYYY-MM) from date
+      const getMonthFromDate = (dateStr: string): string => {
+        // Handle ISO format (YYYY-MM-DD) or other formats
+        const date = new Date(dateStr);
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
       };
 
-      // Determine data range based on mode
-      let queryStart: string;
-      let queryEnd: string | undefined;
+      // Helper to extract day from date string
+      const getDayFromDate = (dateStr: string): number => {
+        const date = new Date(dateStr);
+        return date.getDate();
+      };
 
-      if (isRangeMode) {
-        // Range mode: only load selected months
-        queryStart = rangeStart;
-        queryEnd = rangeEnd;
-      } else {
-        // Single month mode: load all history (last 24 months for comprehensive data)
-        const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), 1);
-        queryStart = `${twoYearsAgo.getFullYear()}-${String(twoYearsAgo.getMonth() + 1).padStart(2, '0')}`;
-      }
-
-      // Build query
-      let query = supabase.
-      from('expenses').
-      select('*').
-      eq('household_id', household.id).
-      eq('payment_method', 'credit').
-      gte('billing_month', queryStart);
-
-      if (queryEnd) {
-        query = query.lte('billing_month', queryEnd);
-      }
-
-      const { data: allCreditExpenses } = await query.order('billing_month', { ascending: true });
+      // Load ALL credit expenses (we'll filter by date, not billing_month)
+      const { data: allCreditExpenses } = await supabase
+        .from('expenses')
+        .select('*')
+        .eq('household_id', household.id)
+        .eq('payment_method', 'credit')
+        .not('date', 'is', null);
 
       if (!allCreditExpenses || allCreditExpenses.length === 0) {
         setCreditInsights({
@@ -160,25 +140,35 @@ export default function Home() {
         return;
       }
 
-      // Group by billing_month
+      // Group expenses by the MONTH from the DATE field (not billing_month)
       const byMonth: Record<string, Expense[]> = {};
       allCreditExpenses.forEach((exp) => {
-        const month = exp.billing_month;
-        if (!byMonth[month]) byMonth[month] = [];
-        byMonth[month].push(exp as Expense);
+        if (!exp.date) return;
+        const monthFromDate = getMonthFromDate(exp.date);
+        if (!byMonth[monthFromDate]) byMonth[monthFromDate] = [];
+        byMonth[monthFromDate].push(exp as Expense);
       });
 
+      // Filter months based on range mode
+      let relevantMonths = Object.keys(byMonth);
+      if (isRangeMode) {
+        relevantMonths = relevantMonths.filter(m => m >= rangeStart && m <= rangeEnd);
+      }
+
       // Calculate "up to this day" for each month
-      const monthTotals = Object.entries(byMonth).map(([month, expenses]) => ({
-        month,
-        upToDay: calcUpToDay(expenses, currentDay)
-      }));
+      const monthTotals = relevantMonths.map(month => {
+        const expenses = byMonth[month];
+        const upToDay = expenses
+          .filter(e => getDayFromDate(e.date) <= currentDay)
+          .reduce((sum, e) => sum + Number(e.amount), 0);
+        return { month, upToDay };
+      });
 
       if (isRangeMode) {
         // Range mode: calculate from selected months only
-        const avgAmount = monthTotals.length > 0 ?
-        monthTotals.reduce((sum, m) => sum + m.upToDay, 0) / monthTotals.length :
-        0;
+        const avgAmount = monthTotals.length > 0
+          ? monthTotals.reduce((sum, m) => sum + m.upToDay, 0) / monthTotals.length
+          : 0;
 
         const sortedByUpToDay = [...monthTotals].sort((a, b) => b.upToDay - a.upToDay);
         const highestMonth = sortedByUpToDay[0] || null;
@@ -197,16 +187,16 @@ export default function Home() {
         // Single month mode: use full history, exclude current month
         const previousMonths = monthTotals.filter((m) => m.month !== currentMonthStr);
 
-        // Last month (the month before current)
+        // Last month (the month before current calendar month)
         const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
         const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
         const lastMonthData = monthTotals.find((m) => m.month === lastMonthStr);
         const lastMonthAmount = lastMonthData?.upToDay || 0;
 
         // Average from all previous months
-        const avgAmount = previousMonths.length > 0 ?
-        previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length :
-        0;
+        const avgAmount = previousMonths.length > 0
+          ? previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length
+          : 0;
 
         // Highest and lowest (excluding current month), by upToDay
         const sortedByUpToDay = [...previousMonths].sort((a, b) => b.upToDay - a.upToDay);
