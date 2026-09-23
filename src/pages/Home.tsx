@@ -49,23 +49,23 @@ export default function Home() {
     lowestIncomeMonth: {month: string;amount: number;} | null;
   } | null>(null);
 
-  // Credit insights state - improved with last month and per-day comparison
+  // Credit insights state - responsive to range mode
   const [creditInsights, setCreditInsights] = useState<{
-    currentMonthCreditUpToToday: number;
-    lastMonthCreditUpToThisDay: number;
-    avgCreditUpToThisDay: number;
+    lastMonthAmount: number; // Only shown in single month mode
+    avgAmount: number;
     highestMonth: {month: string;amount: number;} | null;
     lowestMonth: {month: string;amount: number;} | null;
     monthsCompared: number;
     currentDay: number;
+    isRangeMode: boolean;
   }>({
-    currentMonthCreditUpToToday: 0,
-    lastMonthCreditUpToThisDay: 0,
-    avgCreditUpToThisDay: 0,
+    lastMonthAmount: 0,
+    avgAmount: 0,
     highestMonth: null,
     lowestMonth: null,
     monthsCompared: 0,
-    currentDay: new Date().getDate()
+    currentDay: new Date().getDate(),
+    isRangeMode: false
   });
 
   useEffect(() => {
@@ -97,7 +97,7 @@ export default function Home() {
     loadData();
   }, [household, selectedMonth]);
 
-  // Load credit insights from historical data
+  // Load credit insights - responsive to range mode
   useEffect(() => {
     if (!supabase || !household) return;
 
@@ -106,36 +106,61 @@ export default function Home() {
       const currentDay = today.getDate();
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
-      // Last month string
-      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
-      const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+      // Helper to calculate "up to this day" amount from expenses
+      const calcUpToDay = (expenses: Expense[], dayOfMonth: number): number => {
+        return expenses.
+        filter((e) => {
+          if (!e.date) return true; // Include if no specific date
+          // Parse date - handle both ISO format and other formats
+          const dateStr = e.date;
+          const expDay = new Date(dateStr).getDate();
+          return expDay <= dayOfMonth;
+        }).
+        reduce((sum, e) => sum + Number(e.amount), 0);
+      };
 
-      // Get last 12 months of credit expenses
-      const twelveMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 1);
-      const startMonth = `${twelveMonthsAgo.getFullYear()}-${String(twelveMonthsAgo.getMonth() + 1).padStart(2, '0')}`;
+      // Determine data range based on mode
+      let queryStart: string;
+      let queryEnd: string | undefined;
 
-      const { data: allCreditExpenses } = await supabase.
+      if (isRangeMode) {
+        // Range mode: only load selected months
+        queryStart = rangeStart;
+        queryEnd = rangeEnd;
+      } else {
+        // Single month mode: load all history (last 24 months for comprehensive data)
+        const twoYearsAgo = new Date(today.getFullYear() - 2, today.getMonth(), 1);
+        queryStart = `${twoYearsAgo.getFullYear()}-${String(twoYearsAgo.getMonth() + 1).padStart(2, '0')}`;
+      }
+
+      // Build query
+      let query = supabase.
       from('expenses').
       select('*').
       eq('household_id', household.id).
       eq('payment_method', 'credit').
-      gte('billing_month', startMonth).
-      order('billing_month', { ascending: true });
+      gte('billing_month', queryStart);
+
+      if (queryEnd) {
+        query = query.lte('billing_month', queryEnd);
+      }
+
+      const { data: allCreditExpenses } = await query.order('billing_month', { ascending: true });
 
       if (!allCreditExpenses || allCreditExpenses.length === 0) {
         setCreditInsights({
-          currentMonthCreditUpToToday: 0,
-          lastMonthCreditUpToThisDay: 0,
-          avgCreditUpToThisDay: 0,
+          lastMonthAmount: 0,
+          avgAmount: 0,
           highestMonth: null,
           lowestMonth: null,
           monthsCompared: 0,
-          currentDay
+          currentDay,
+          isRangeMode
         });
         return;
       }
 
-      // Group by month
+      // Group by billing_month
       const byMonth: Record<string, Expense[]> = {};
       allCreditExpenses.forEach((exp) => {
         const month = exp.billing_month;
@@ -143,55 +168,65 @@ export default function Home() {
         byMonth[month].push(exp as Expense);
       });
 
-      // Calculate totals by month - "up to day" uses date within month
-      const monthTotals: {month: string;total: number;upToDay: number;}[] = [];
-      Object.entries(byMonth).forEach(([month, expenses]) => {
-        const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-        // For "up to day" calculation, filter by date within that month
-        const upToDay = expenses.
-        filter((e) => {
-          if (!e.date) return true; // Include if no specific date
-          const expDate = new Date(e.date);
-          return expDate.getDate() <= currentDay;
-        }).
-        reduce((sum, e) => sum + Number(e.amount), 0);
-        monthTotals.push({ month, total, upToDay });
-      });
+      // Calculate "up to this day" for each month
+      const monthTotals = Object.entries(byMonth).map(([month, expenses]) => ({
+        month,
+        upToDay: calcUpToDay(expenses, currentDay)
+      }));
 
-      // Current month data
-      const currentMonthData = monthTotals.find((m) => m.month === currentMonthStr);
-      const currentMonthCreditUpToToday = currentMonthData?.upToDay || 0;
+      if (isRangeMode) {
+        // Range mode: calculate from selected months only
+        const avgAmount = monthTotals.length > 0 ?
+        monthTotals.reduce((sum, m) => sum + m.upToDay, 0) / monthTotals.length :
+        0;
 
-      // Last month data (up to this day)
-      const lastMonthData = monthTotals.find((m) => m.month === lastMonthStr);
-      const lastMonthCreditUpToThisDay = lastMonthData?.upToDay || 0;
+        const sortedByUpToDay = [...monthTotals].sort((a, b) => b.upToDay - a.upToDay);
+        const highestMonth = sortedByUpToDay[0] || null;
+        const lowestMonth = sortedByUpToDay[sortedByUpToDay.length - 1] || null;
 
-      // Previous months (excluding current) for average
-      const previousMonths = monthTotals.filter((m) => m.month !== currentMonthStr);
+        setCreditInsights({
+          lastMonthAmount: 0, // Not relevant in range mode
+          avgAmount,
+          highestMonth: highestMonth ? { month: highestMonth.month, amount: highestMonth.upToDay } : null,
+          lowestMonth: lowestMonth ? { month: lowestMonth.month, amount: lowestMonth.upToDay } : null,
+          monthsCompared: monthTotals.length,
+          currentDay,
+          isRangeMode: true
+        });
+      } else {
+        // Single month mode: use full history, exclude current month
+        const previousMonths = monthTotals.filter((m) => m.month !== currentMonthStr);
 
-      // Average "up to this day" from all previous months
-      const avgCreditUpToThisDay = previousMonths.length > 0 ?
-      previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length :
-      0;
+        // Last month (the month before current)
+        const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+        const lastMonthData = monthTotals.find((m) => m.month === lastMonthStr);
+        const lastMonthAmount = lastMonthData?.upToDay || 0;
 
-      // Find highest and lowest months (total for full month)
-      const sortedByTotal = [...monthTotals].sort((a, b) => b.total - a.total);
-      const highestMonth = sortedByTotal[0] || null;
-      const lowestMonth = sortedByTotal[sortedByTotal.length - 1] || null;
+        // Average from all previous months
+        const avgAmount = previousMonths.length > 0 ?
+        previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length :
+        0;
 
-      setCreditInsights({
-        currentMonthCreditUpToToday,
-        lastMonthCreditUpToThisDay,
-        avgCreditUpToThisDay,
-        highestMonth: highestMonth ? { month: highestMonth.month, amount: highestMonth.total } : null,
-        lowestMonth: lowestMonth ? { month: lowestMonth.month, amount: lowestMonth.total } : null,
-        monthsCompared: previousMonths.length,
-        currentDay
-      });
+        // Highest and lowest (excluding current month), by upToDay
+        const sortedByUpToDay = [...previousMonths].sort((a, b) => b.upToDay - a.upToDay);
+        const highestMonth = sortedByUpToDay[0] || null;
+        const lowestMonth = sortedByUpToDay[sortedByUpToDay.length - 1] || null;
+
+        setCreditInsights({
+          lastMonthAmount,
+          avgAmount,
+          highestMonth: highestMonth ? { month: highestMonth.month, amount: highestMonth.upToDay } : null,
+          lowestMonth: lowestMonth ? { month: lowestMonth.month, amount: lowestMonth.upToDay } : null,
+          monthsCompared: previousMonths.length,
+          currentDay,
+          isRangeMode: false
+        });
+      }
     };
 
     loadCreditInsights();
-  }, [household]);
+  }, [household, isRangeMode, rangeStart, rangeEnd]);
 
   // Load range data when in range mode
   useEffect(() => {
@@ -570,58 +605,64 @@ export default function Home() {
           </div>)
         }
 
-        {/* Credit insights from previous months */}
+        {/* Credit insights */}
         {creditInsights.monthsCompared > 0 &&
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200">
-            <div data-ev-id="ev_7480dafa13" className="flex items-center gap-2 mb-4">
+            <div data-ev-id="ev_44bf67c4ae" className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-5 h-5 text-purple-600" />
-              <h3 data-ev-id="ev_01fad41e8f" className="font-semibold text-foreground">תובנות אשראי (עד יום {creditInsights.currentDay} בחודש)</h3>
+              <h3 data-ev-id="ev_86f7575875" className="font-semibold text-foreground">
+                תובנות אשראי (עד יום {creditInsights.currentDay} בחודש)
+                {creditInsights.isRangeMode && <span data-ev-id="ev_b012a539c1" className="text-sm font-normal text-muted-foreground"> - לפי הטווח שנבחר</span>}
+              </h3>
             </div>
             
-            <div data-ev-id="ev_d273bcfc6d" className="grid grid-cols-1 md:grid-cols-4 gap-4">
-              {/* Current month up to today */}
-              <div data-ev-id="ev_ac210d9ef0" className="bg-background/50 rounded-lg p-3">
-                <p data-ev-id="ev_11169296d4" className="text-sm text-muted-foreground mb-1">החודש הנוכחי</p>
-                <p data-ev-id="ev_0f738e4c93" className="text-xl font-bold text-foreground">
-                  ₪{creditInsights.currentMonthCreditUpToToday.toLocaleString()}
-                </p>
-              </div>
+            <div data-ev-id="ev_4eeab2a47b" className={`grid grid-cols-1 gap-4 ${creditInsights.isRangeMode ? 'md:grid-cols-3' : 'md:grid-cols-4'}`}>
+              {/* Last month - only in single month mode */}
+              {!creditInsights.isRangeMode &&
+            <div data-ev-id="ev_caa800543b" className="bg-background/50 rounded-lg p-3">
+                  <p data-ev-id="ev_0a1b7fe628" className="text-sm text-muted-foreground mb-1">חודש שעבר</p>
+                  <p data-ev-id="ev_45fb6a06af" className="text-xl font-bold text-foreground">
+                    ₪{creditInsights.lastMonthAmount.toLocaleString()}
+                  </p>
+                </div>
+            }
 
-              {/* Last month up to this day */}
-              <div data-ev-id="ev_c9a841d8f3" className="bg-background/50 rounded-lg p-3">
-                <p data-ev-id="ev_9b87d5db38" className="text-sm text-muted-foreground mb-1">חודש שעבר</p>
-                <p data-ev-id="ev_ce742c3db2" className="text-xl font-bold text-foreground">
-                  ₪{creditInsights.lastMonthCreditUpToThisDay.toLocaleString()}
+              {/* Average */}
+              <div data-ev-id="ev_3de5953e35" className="bg-background/50 rounded-lg p-3">
+                <p data-ev-id="ev_a0d0b5f220" className="text-sm text-muted-foreground mb-1">ממוצע</p>
+                <p data-ev-id="ev_8853858c86" className="text-xl font-bold text-foreground">
+                  ₪{Math.round(creditInsights.avgAmount).toLocaleString()}
                 </p>
-              </div>
-
-              {/* Average up to this day */}
-              <div data-ev-id="ev_6fef0d05e6" className="bg-background/50 rounded-lg p-3">
-                <p data-ev-id="ev_047c029f85" className="text-sm text-muted-foreground mb-1">ממוצע חודשי</p>
-                <p data-ev-id="ev_410982f315" className="text-xl font-bold text-foreground">
-                  ₪{Math.round(creditInsights.avgCreditUpToThisDay).toLocaleString()}
-                </p>
-                <p data-ev-id="ev_6c3d1214e0" className="text-xs text-muted-foreground">
+                <p data-ev-id="ev_eab3830c24" className="text-xs text-muted-foreground">
                   מ-{creditInsights.monthsCompared} חודשים
                 </p>
               </div>
 
-              {/* Highest/Lowest summary */}
-              <div data-ev-id="ev_8018325835" className="bg-background/50 rounded-lg p-3">
-                <p data-ev-id="ev_ae15041f41" className="text-sm text-muted-foreground mb-1">טווח חודשי</p>
-                {creditInsights.highestMonth &&
-              <div data-ev-id="ev_d33e5c4acd" className="flex items-center justify-between text-sm">
-                    <span data-ev-id="ev_aa0d66e15e" className="text-muted-foreground">גבוה:</span>
-                    <span data-ev-id="ev_850db37894" className="font-medium text-red-600">₪{creditInsights.highestMonth.amount.toLocaleString()}</span>
-                  </div>
-              }
-                {creditInsights.lowestMonth &&
-              <div data-ev-id="ev_3e70d808fe" className="flex items-center justify-between text-sm">
-                    <span data-ev-id="ev_63d51c3122" className="text-muted-foreground">נמוך:</span>
-                    <span data-ev-id="ev_cee583ed98" className="font-medium text-green-600">₪{creditInsights.lowestMonth.amount.toLocaleString()}</span>
-                  </div>
-              }
-              </div>
+              {/* Highest month */}
+              {creditInsights.highestMonth &&
+            <div data-ev-id="ev_2a01e83926" className="bg-background/50 rounded-lg p-3">
+                  <p data-ev-id="ev_dc6005568a" className="text-sm text-muted-foreground mb-1">החודש הגבוה ביותר</p>
+                  <p data-ev-id="ev_51b061d8a0" className="text-xl font-bold text-red-600">
+                    ₪{creditInsights.highestMonth.amount.toLocaleString()}
+                  </p>
+                  <p data-ev-id="ev_880d04c28c" className="text-xs text-muted-foreground">
+                    {formatMonthHebrew(creditInsights.highestMonth.month)}
+                  </p>
+                </div>
+            }
+
+              {/* Lowest month */}
+              {creditInsights.lowestMonth &&
+            <div data-ev-id="ev_6af81b2b47" className="bg-background/50 rounded-lg p-3">
+                  <p data-ev-id="ev_736a4a9367" className="text-sm text-muted-foreground mb-1">החודש הנמוך ביותר</p>
+                  <p data-ev-id="ev_0028c28a78" className="text-xl font-bold text-green-600">
+                    ₪{creditInsights.lowestMonth.amount.toLocaleString()}
+                  </p>
+                  <p data-ev-id="ev_abed996e1a" className="text-xs text-muted-foreground">
+                    {formatMonthHebrew(creditInsights.lowestMonth.month)}
+                  </p>
+                </div>
+            }
             </div>
           </Card>
         }
