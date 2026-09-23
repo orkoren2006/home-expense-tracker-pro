@@ -375,7 +375,7 @@ export default function CashFlow() {
               <span data-ev-id="ev_dbe69f86bd" className="text-sm text-muted-foreground">סה"כ חיובים צפויים</span>
             </div>
             <p data-ev-id="ev_620192e968" className="text-2xl font-bold text-red-600">
-              {totalDeductions > 0 ? `-${formatCurrency(totalDeductions)}` : '—'}
+              {totalDeductions > 0 ? formatCurrency(totalDeductions) : '—'}
             </p>
             <p data-ev-id="ev_f0ca457e98" className="text-xs text-muted-foreground mt-1">
               {includedItems.length} פריטים עד 10/{targetMonth + 1}
@@ -482,13 +482,13 @@ export default function CashFlow() {
                     </div>
                   </div>
                   <span data-ev-id="ev_387f234352" className="font-medium text-red-600">
-                    -{formatCurrency(item.amount)}
+                    {formatCurrency(item.amount)}
                   </span>
                 </div>
             )}
               <div data-ev-id="ev_59316f2c56" className="flex items-center justify-between py-2 pt-3 border-t-2 border-border font-bold">
                 <span data-ev-id="ev_bcbd1e9d1f" className="text-foreground">סה"כ</span>
-                <span data-ev-id="ev_8cfe5bd264" className="text-red-600">-{formatCurrency(totalDeductions)}</span>
+                <span data-ev-id="ev_8cfe5bd264" className="text-red-600">{formatCurrency(totalDeductions)}</span>
               </div>
             </div>
           </Card>
