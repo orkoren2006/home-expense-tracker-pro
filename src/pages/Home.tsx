@@ -1,12 +1,14 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Link } from 'react-router';
-import { TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft, Scale, BarChart3, ArrowUp, ArrowDown, Calendar, X } from 'lucide-react';
+import { TrendingDown, TrendingUp, CreditCard, AlertCircle, ChevronRight, ChevronLeft, Scale, BarChart3, X, Calendar } from 'lucide-react';
 import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
 import type { Expense, Income } from '@/types';
 import { PAYMENT_METHOD_LABELS, INCOME_SOURCE_LABELS } from '@/types';
+import { MonthPicker } from '@/components/MonthPicker';
+import { formatMonthHebrew } from '@/lib/constants';
 
 export default function Home() {
   const { household, categories, expenseRules, classificationOptions } = useHousehold();
@@ -47,21 +49,23 @@ export default function Home() {
     lowestIncomeMonth: {month: string;amount: number;} | null;
   } | null>(null);
 
-  // Credit insights state
+  // Credit insights state - improved with last month and per-day comparison
   const [creditInsights, setCreditInsights] = useState<{
-    currentMonthCredit: number;
     currentMonthCreditUpToToday: number;
+    lastMonthCreditUpToThisDay: number;
     avgCreditUpToThisDay: number;
     highestMonth: {month: string;amount: number;} | null;
     lowestMonth: {month: string;amount: number;} | null;
     monthsCompared: number;
+    currentDay: number;
   }>({
-    currentMonthCredit: 0,
     currentMonthCreditUpToToday: 0,
+    lastMonthCreditUpToThisDay: 0,
     avgCreditUpToThisDay: 0,
     highestMonth: null,
     lowestMonth: null,
-    monthsCompared: 0
+    monthsCompared: 0,
+    currentDay: new Date().getDate()
   });
 
   useEffect(() => {
@@ -102,6 +106,10 @@ export default function Home() {
       const currentDay = today.getDate();
       const currentMonthStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}`;
 
+      // Last month string
+      const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastMonthStr = `${lastMonth.getFullYear()}-${String(lastMonth.getMonth() + 1).padStart(2, '0')}`;
+
       // Get last 12 months of credit expenses
       const twelveMonthsAgo = new Date(today.getFullYear(), today.getMonth() - 11, 1);
       const startMonth = `${twelveMonthsAgo.getFullYear()}-${String(twelveMonthsAgo.getMonth() + 1).padStart(2, '0')}`;
@@ -116,12 +124,13 @@ export default function Home() {
 
       if (!allCreditExpenses || allCreditExpenses.length === 0) {
         setCreditInsights({
-          currentMonthCredit: 0,
           currentMonthCreditUpToToday: 0,
+          lastMonthCreditUpToThisDay: 0,
           avgCreditUpToThisDay: 0,
           highestMonth: null,
           lowestMonth: null,
-          monthsCompared: 0
+          monthsCompared: 0,
+          currentDay
         });
         return;
       }
@@ -134,7 +143,7 @@ export default function Home() {
         byMonth[month].push(exp as Expense);
       });
 
-      // Calculate totals by month
+      // Calculate totals by month - "up to day" uses date within month
       const monthTotals: {month: string;total: number;upToDay: number;}[] = [];
       Object.entries(byMonth).forEach(([month, expenses]) => {
         const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
@@ -151,29 +160,33 @@ export default function Home() {
 
       // Current month data
       const currentMonthData = monthTotals.find((m) => m.month === currentMonthStr);
-      const currentMonthCredit = currentMonthData?.total || 0;
       const currentMonthCreditUpToToday = currentMonthData?.upToDay || 0;
 
-      // Previous months (excluding current)
+      // Last month data (up to this day)
+      const lastMonthData = monthTotals.find((m) => m.month === lastMonthStr);
+      const lastMonthCreditUpToThisDay = lastMonthData?.upToDay || 0;
+
+      // Previous months (excluding current) for average
       const previousMonths = monthTotals.filter((m) => m.month !== currentMonthStr);
 
-      // Average "up to this day" from previous months
+      // Average "up to this day" from all previous months
       const avgCreditUpToThisDay = previousMonths.length > 0 ?
       previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length :
       0;
 
-      // Find highest and lowest months (from all months including current)
+      // Find highest and lowest months (total for full month)
       const sortedByTotal = [...monthTotals].sort((a, b) => b.total - a.total);
       const highestMonth = sortedByTotal[0] || null;
       const lowestMonth = sortedByTotal[sortedByTotal.length - 1] || null;
 
       setCreditInsights({
-        currentMonthCredit,
         currentMonthCreditUpToToday,
+        lastMonthCreditUpToThisDay,
         avgCreditUpToThisDay,
         highestMonth: highestMonth ? { month: highestMonth.month, amount: highestMonth.total } : null,
         lowestMonth: lowestMonth ? { month: lowestMonth.month, amount: lowestMonth.total } : null,
-        monthsCompared: previousMonths.length
+        monthsCompared: previousMonths.length,
+        currentDay
       });
     };
 
@@ -300,23 +313,10 @@ export default function Home() {
 
   const monthName = selectedMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
 
-  // Helper to format month string (YYYY-MM) to Hebrew
-  const formatMonthStr = (monthStr: string) => {
-    const [year, month] = monthStr.split('-');
-    const months = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-    return `${months[parseInt(month) - 1]} ${year}`;
-  };
-
   // Range display name
   const rangeDisplayName = isRangeMode ?
-  `${formatMonthStr(rangeStart)} - ${formatMonthStr(rangeEnd)}` :
+  `${formatMonthHebrew(rangeStart)} - ${formatMonthHebrew(rangeEnd)}` :
   monthName;
-
-  // Calculate credit insights comparison
-  const creditDiff = creditInsights.currentMonthCreditUpToToday - creditInsights.avgCreditUpToThisDay;
-  const creditDiffPercent = creditInsights.avgCreditUpToThisDay > 0 ?
-  Math.round(creditDiff / creditInsights.avgCreditUpToThisDay * 100) :
-  0;
 
   // Build label maps including custom classification options
   const paymentMethodLabels: Record<string, string> = { ...PAYMENT_METHOD_LABELS };
@@ -423,22 +423,12 @@ export default function Home() {
                 <div data-ev-id="ev_b9a2267aca" className="flex gap-3 items-center">
                   <div data-ev-id="ev_3a9495cc67" className="flex-1">
                     <label data-ev-id="ev_8addd26fbf" className="text-sm text-muted-foreground block mb-1">מחודש</label>
-                    <input data-ev-id="ev_1ea3c02ca1"
-                  type="month"
-                  value={rangeStart}
-                  onChange={(e) => setRangeStart(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background" />
-
+                    <MonthPicker value={rangeStart} onChange={setRangeStart} />
                   </div>
-                  <span data-ev-id="ev_51bd6aea72" className="text-muted-foreground mt-5">עד</span>
-                  <div data-ev-id="ev_7eac296dfd" className="flex-1">
-                    <label data-ev-id="ev_b02fb4128f" className="text-sm text-muted-foreground block mb-1">עד חודש</label>
-                    <input data-ev-id="ev_baa7d7ec1e"
-                  type="month"
-                  value={rangeEnd}
-                  onChange={(e) => setRangeEnd(e.target.value)}
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background" />
-
+                  <span data-ev-id="ev_a7ee42e618" className="text-muted-foreground mt-5">עד</span>
+                  <div data-ev-id="ev_8722129c78" className="flex-1">
+                    <label data-ev-id="ev_b9d08bd5b2" className="text-sm text-muted-foreground block mb-1">עד חודש</label>
+                    <MonthPicker value={rangeEnd} onChange={setRangeEnd} />
                   </div>
                 </div>
                 <button data-ev-id="ev_818092d1eb"
@@ -483,7 +473,7 @@ export default function Home() {
                 <span data-ev-id="ev_cbc2382a33" className="text-sm">מאזן</span>
               </div>
               <p data-ev-id="ev_ec2487fe6e" className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {loading ? '...' : `${balance >= 0 ? '+' : ''}₪${balance.toLocaleString()}`}
+                {loading ? '...' : `₪${Math.abs(balance).toLocaleString()}`}
               </p>
             </Card>
 
@@ -528,7 +518,7 @@ export default function Home() {
                   <span data-ev-id="ev_699298f1a2" className="text-sm">מאזן כולל</span>
                 </div>
                 <p data-ev-id="ev_c07caabf65" className={`text-2xl font-bold ${(rangeStats?.totalIncomes ?? 0) - (rangeStats?.totalExpenses ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                  {loading ? '...' : `${(rangeStats?.totalIncomes ?? 0) - (rangeStats?.totalExpenses ?? 0) >= 0 ? '+' : ''}₪${((rangeStats?.totalIncomes ?? 0) - (rangeStats?.totalExpenses ?? 0)).toLocaleString()}`}
+                  {loading ? '...' : `₪${Math.abs((rangeStats?.totalIncomes ?? 0) - (rangeStats?.totalExpenses ?? 0)).toLocaleString()}`}
                 </p>
               </Card>
             </div>
@@ -556,7 +546,7 @@ export default function Home() {
                 <>
                       ₪{rangeStats.highestExpenseMonth.amount.toLocaleString()}
                       <span data-ev-id="ev_09e4c919e2" className="text-xs text-muted-foreground font-normal block">
-                        {formatMonthStr(rangeStats.highestExpenseMonth.month)}
+                        {formatMonthHebrew(rangeStats.highestExpenseMonth.month)}
                       </span>
                     </> :
                 '-'}
@@ -570,7 +560,7 @@ export default function Home() {
                 <>
                       ₪{rangeStats.lowestExpenseMonth.amount.toLocaleString()}
                       <span data-ev-id="ev_50ca1b39cd" className="text-xs text-muted-foreground font-normal block">
-                        {formatMonthStr(rangeStats.lowestExpenseMonth.month)}
+                        {formatMonthHebrew(rangeStats.lowestExpenseMonth.month)}
                       </span>
                     </> :
                 '-'}
@@ -583,59 +573,56 @@ export default function Home() {
         {/* Credit insights from previous months */}
         {creditInsights.monthsCompared > 0 &&
         <Card className="bg-gradient-to-br from-purple-500/10 to-purple-600/5 border-purple-200">
-            <div data-ev-id="ev_55f6803ba1" className="flex items-center gap-2 mb-4">
+            <div data-ev-id="ev_7480dafa13" className="flex items-center gap-2 mb-4">
               <BarChart3 className="w-5 h-5 text-purple-600" />
-              <h3 data-ev-id="ev_d94d683377" className="font-semibold text-foreground">תובנות אשראי מחודשים קודמים</h3>
+              <h3 data-ev-id="ev_01fad41e8f" className="font-semibold text-foreground">תובנות אשראי (עד יום {creditInsights.currentDay} בחודש)</h3>
             </div>
             
-            <div data-ev-id="ev_47ec26d059" className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Current vs Average */}
-              <div data-ev-id="ev_d4ff2d1b34" className="bg-background/50 rounded-lg p-3">
-                <p data-ev-id="ev_1120594eb8" className="text-sm text-muted-foreground mb-1">אשראי עד היום בחודש</p>
-                <p data-ev-id="ev_cd44a5e6ce" className="text-xl font-bold text-foreground">
+            <div data-ev-id="ev_d273bcfc6d" className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              {/* Current month up to today */}
+              <div data-ev-id="ev_ac210d9ef0" className="bg-background/50 rounded-lg p-3">
+                <p data-ev-id="ev_11169296d4" className="text-sm text-muted-foreground mb-1">החודש הנוכחי</p>
+                <p data-ev-id="ev_0f738e4c93" className="text-xl font-bold text-foreground">
                   ₪{creditInsights.currentMonthCreditUpToToday.toLocaleString()}
                 </p>
-                <div data-ev-id="ev_02d6c88437" className={`flex items-center gap-1 mt-1 text-sm ${
-              creditDiff > 0 ? 'text-red-600' : creditDiff < 0 ? 'text-green-600' : 'text-muted-foreground'}`
-              }>
-                  {creditDiff > 0 ? <ArrowUp className="w-3 h-3" /> : creditDiff < 0 ? <ArrowDown className="w-3 h-3" /> : null}
-                  <span data-ev-id="ev_3f9e78941b">
-                    {creditDiff !== 0 ? `${creditDiff > 0 ? '+' : ''}${creditDiffPercent}% ` : ''}
-                    ממוצע (₪{Math.round(creditInsights.avgCreditUpToThisDay).toLocaleString()})
-                  </span>
-                </div>
               </div>
 
-              {/* Highest month */}
-              {creditInsights.highestMonth &&
-            <div data-ev-id="ev_d188907ff7" className="bg-background/50 rounded-lg p-3">
-                  <p data-ev-id="ev_86221872f5" className="text-sm text-muted-foreground mb-1">החודש הגבוה ביותר</p>
-                  <p data-ev-id="ev_21e27bb8bc" className="text-xl font-bold text-red-600">
-                    ₪{creditInsights.highestMonth.amount.toLocaleString()}
-                  </p>
-                  <p data-ev-id="ev_77ca520c87" className="text-sm text-muted-foreground mt-1">
-                    {formatMonthStr(creditInsights.highestMonth.month)}
-                  </p>
-                </div>
-            }
+              {/* Last month up to this day */}
+              <div data-ev-id="ev_c9a841d8f3" className="bg-background/50 rounded-lg p-3">
+                <p data-ev-id="ev_9b87d5db38" className="text-sm text-muted-foreground mb-1">חודש שעבר</p>
+                <p data-ev-id="ev_ce742c3db2" className="text-xl font-bold text-foreground">
+                  ₪{creditInsights.lastMonthCreditUpToThisDay.toLocaleString()}
+                </p>
+              </div>
 
-              {/* Lowest month */}
-              {creditInsights.lowestMonth &&
-            <div data-ev-id="ev_c321812b20" className="bg-background/50 rounded-lg p-3">
-                  <p data-ev-id="ev_6b254614f6" className="text-sm text-muted-foreground mb-1">החודש הנמוך ביותר</p>
-                  <p data-ev-id="ev_074a05e7a9" className="text-xl font-bold text-green-600">
-                    ₪{creditInsights.lowestMonth.amount.toLocaleString()}
-                  </p>
-                  <p data-ev-id="ev_393d4c439f" className="text-sm text-muted-foreground mt-1">
-                    {formatMonthStr(creditInsights.lowestMonth.month)}
-                  </p>
-                </div>
-            }
+              {/* Average up to this day */}
+              <div data-ev-id="ev_6fef0d05e6" className="bg-background/50 rounded-lg p-3">
+                <p data-ev-id="ev_047c029f85" className="text-sm text-muted-foreground mb-1">ממוצע חודשי</p>
+                <p data-ev-id="ev_410982f315" className="text-xl font-bold text-foreground">
+                  ₪{Math.round(creditInsights.avgCreditUpToThisDay).toLocaleString()}
+                </p>
+                <p data-ev-id="ev_6c3d1214e0" className="text-xs text-muted-foreground">
+                  מ-{creditInsights.monthsCompared} חודשים
+                </p>
+              </div>
+
+              {/* Highest/Lowest summary */}
+              <div data-ev-id="ev_8018325835" className="bg-background/50 rounded-lg p-3">
+                <p data-ev-id="ev_ae15041f41" className="text-sm text-muted-foreground mb-1">טווח חודשי</p>
+                {creditInsights.highestMonth &&
+              <div data-ev-id="ev_d33e5c4acd" className="flex items-center justify-between text-sm">
+                    <span data-ev-id="ev_aa0d66e15e" className="text-muted-foreground">גבוה:</span>
+                    <span data-ev-id="ev_850db37894" className="font-medium text-red-600">₪{creditInsights.highestMonth.amount.toLocaleString()}</span>
+                  </div>
+              }
+                {creditInsights.lowestMonth &&
+              <div data-ev-id="ev_3e70d808fe" className="flex items-center justify-between text-sm">
+                    <span data-ev-id="ev_63d51c3122" className="text-muted-foreground">נמוך:</span>
+                    <span data-ev-id="ev_cee583ed98" className="font-medium text-green-600">₪{creditInsights.lowestMonth.amount.toLocaleString()}</span>
+                  </div>
+              }
+              </div>
             </div>
-            
-            <p data-ev-id="ev_879e0480f4" className="text-xs text-muted-foreground mt-3">
-              בהשוואה ל-{creditInsights.monthsCompared} חודשים אחרונים
-            </p>
           </Card>
         }
 

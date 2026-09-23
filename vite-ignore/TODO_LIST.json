@@ -1,33 +1,34 @@
 {
-  "summary": "שיפורי מסך בית + עמוד חישובים מתקדמים",
+  "summary": "תיקונים ושיפורים - בורר חודשים, מינוסים, מיון, תובנות אשראי",
   "todos": [
     {
       "id": 1,
-      "description": "תובנות אשראי מחודשים קודמים במסך הבית",
+      "description": "בורר חודשים מותאם (עברית, עיצוב אחיד) + ניווט חיצים",
       "files": [
-        "src/pages/Home.tsx"
+        "src/pages/Home.tsx",
+        "src/pages/Analytics.tsx",
+        "src/components/MonthPicker.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "בורר טווח חודשים + ריבועי סיכום מורחבים",
+      "description": "הסרת מינוסים (למעט זיכויים) + זיכויים בירוק + מיון בטבלה",
       "files": [
-        "src/pages/Home.tsx"
+        "src/pages/Home.tsx",
+        "src/pages/Analytics.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 3,
-      "description": "עמוד חישובים מתקדמים עם פילטרים וטבלת פירוט",
+      "description": "תיקון תובנות אשראי - השוואה ליום בחודש",
       "files": [
-        "src/pages/Analytics.tsx",
-        "src/App.tsx",
-        "src/components/Layout.tsx"
+        "src/pages/Home.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-23T14:52:13.809Z",
-  "updatedAt": "2026-09-23T15:01:50.710Z"
+  "createdAt": "2026-09-23T19:51:56.913Z",
+  "updatedAt": "2026-09-23T19:59:53.233Z"
 }

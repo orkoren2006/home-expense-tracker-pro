@@ -3,15 +3,19 @@ import { Layout } from '@/components/Layout';
 import { Card } from '@/components/ui/Card';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
-import type { Expense, Income, Category } from '@/types';
+import { MonthPicker } from '@/components/MonthPicker';
+import { formatMonthHebrew } from '@/lib/constants';
+import type { Expense, Income } from '@/types';
 import {
   PAYMENT_METHOD_LABELS,
   EXPENSE_TYPE_LABELS,
   INCOME_SOURCE_LABELS } from
 '@/types';
-import { Calculator, TrendingDown, TrendingUp, Filter, X, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calculator, TrendingDown, TrendingUp, Filter, X, ChevronDown, ChevronUp, ChevronRight, ChevronLeft, ArrowUpDown, ArrowUp, ArrowDown } from 'lucide-react';
 
 type TabType = 'expenses' | 'incomes';
+type SortField = 'categoryName' | 'count' | 'total' | 'avg' | 'highest' | 'lowest' | 'sourceName';
+type SortDir = 'asc' | 'desc';
 
 interface FilterState {
   categories: string[];
@@ -38,6 +42,20 @@ export default function Analytics() {
     const now = new Date();
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   });
+  const [isRangeMode, setIsRangeMode] = useState(false);
+  const [showRangeModal, setShowRangeModal] = useState(false);
+
+  // Current single month for navigation
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
+  });
+
+  // Sorting
+  const [expenseSortField, setExpenseSortField] = useState<SortField>('total');
+  const [expenseSortDir, setExpenseSortDir] = useState<SortDir>('desc');
+  const [incomeSortField, setIncomeSortField] = useState<SortField>('total');
+  const [incomeSortDir, setIncomeSortDir] = useState<SortDir>('desc');
 
   // Filters
   const [filters, setFilters] = useState<FilterState>({
@@ -71,6 +89,16 @@ export default function Analytics() {
     return labels;
   }, [classificationOptions]);
 
+  // Get effective date range based on mode
+  const effectiveRange = useMemo(() => {
+    if (isRangeMode) {
+      return { start: rangeStart, end: rangeEnd };
+    } else {
+      const month = `${selectedMonth.getFullYear()}-${String(selectedMonth.getMonth() + 1).padStart(2, '0')}`;
+      return { start: month, end: month };
+    }
+  }, [isRangeMode, rangeStart, rangeEnd, selectedMonth]);
+
   // Load data
   useEffect(() => {
     if (!supabase || !household) return;
@@ -83,15 +111,15 @@ export default function Analytics() {
       from('expenses').
       select('*').
       eq('household_id', household.id).
-      gte('billing_month', rangeStart).
-      lte('billing_month', rangeEnd).
+      gte('billing_month', effectiveRange.start).
+      lte('billing_month', effectiveRange.end).
       order('billing_month'),
       supabase.
       from('incomes').
       select('*').
       eq('household_id', household.id).
-      gte('billing_month', rangeStart).
-      lte('billing_month', rangeEnd).
+      gte('billing_month', effectiveRange.start).
+      lte('billing_month', effectiveRange.end).
       order('billing_month')]
       );
 
@@ -101,13 +129,30 @@ export default function Analytics() {
     };
 
     loadData();
-  }, [household, rangeStart, rangeEnd]);
+  }, [household, effectiveRange]);
 
-  // Helper to format month string (YYYY-MM) to Hebrew
-  const formatMonthStr = (monthStr: string) => {
-    const [year, month] = monthStr.split('-');
-    const months = ['ינואר', 'פברואר', 'מרץ', 'אפריל', 'מאי', 'יוני', 'יולי', 'אוגוסט', 'ספטמבר', 'אוקטובר', 'נובמבר', 'דצמבר'];
-    return `${months[parseInt(month) - 1]} ${year}`;
+  // Navigation functions
+  const goToPrevMonth = () => {
+    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
+  };
+
+  const goToNextMonth = () => {
+    setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() + 1, 1));
+  };
+
+  const selectLastNMonths = (n: number) => {
+    const now = new Date();
+    const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    const start = new Date(now.getFullYear(), now.getMonth() - n + 1, 1);
+    const startStr = `${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`;
+    setRangeStart(startStr);
+    setRangeEnd(end);
+    setIsRangeMode(true);
+    setShowRangeModal(false);
+  };
+
+  const exitRangeMode = () => {
+    setIsRangeMode(false);
   };
 
   // Category name lookup (memoized)
@@ -235,7 +280,7 @@ export default function Analytics() {
       avg: data.count > 0 ? data.total / data.count : 0,
       highest: Math.max(...data.amounts),
       lowest: Math.min(...data.amounts)
-    })).sort((a, b) => b.total - a.total);
+    }));
 
     return {
       total,
@@ -249,6 +294,20 @@ export default function Analytics() {
       categoryBreakdown
     };
   }, [filteredExpenses, getCategoryName]);
+
+  // Sorted category breakdown
+  const sortedCategoryBreakdown = useMemo(() => {
+    const sorted = [...expenseStats.categoryBreakdown];
+    sorted.sort((a, b) => {
+      const aVal = a[expenseSortField as keyof typeof a];
+      const bVal = b[expenseSortField as keyof typeof b];
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return expenseSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      return expenseSortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    return sorted;
+  }, [expenseStats.categoryBreakdown, expenseSortField, expenseSortDir]);
 
   const incomeStats = useMemo(() => {
     const total = filteredIncomes.reduce((sum, i) => sum + Number(i.amount), 0);
@@ -290,7 +349,7 @@ export default function Analytics() {
       avg: data.count > 0 ? data.total / data.count : 0,
       highest: Math.max(...data.amounts),
       lowest: Math.min(...data.amounts)
-    })).sort((a, b) => b.total - a.total);
+    }));
 
     return {
       total,
@@ -304,6 +363,61 @@ export default function Analytics() {
       sourceBreakdown
     };
   }, [filteredIncomes, incomeSourceLabels]);
+
+  // Sorted source breakdown
+  const sortedSourceBreakdown = useMemo(() => {
+    const sorted = [...incomeStats.sourceBreakdown];
+    sorted.sort((a, b) => {
+      const aVal = a[incomeSortField as keyof typeof a];
+      const bVal = b[incomeSortField as keyof typeof b];
+      if (typeof aVal === 'string' && typeof bVal === 'string') {
+        return incomeSortDir === 'asc' ? aVal.localeCompare(bVal) : bVal.localeCompare(aVal);
+      }
+      return incomeSortDir === 'asc' ? (aVal as number) - (bVal as number) : (bVal as number) - (aVal as number);
+    });
+    return sorted;
+  }, [incomeStats.sourceBreakdown, incomeSortField, incomeSortDir]);
+
+  // Sort header component
+  const SortHeader = ({ field, label, sortField, sortDir, onSort
+
+
+
+
+
+  }: {field: SortField;label: string;sortField: SortField;sortDir: SortDir;onSort: (field: SortField) => void;}) =>
+  <th data-ev-id="ev_093507fba5"
+  className="text-right py-2 px-2 font-medium text-muted-foreground cursor-pointer hover:text-foreground select-none"
+  onClick={() => onSort(field)}>
+
+      <div data-ev-id="ev_e0b134dc66" className="flex items-center gap-1">
+        <span data-ev-id="ev_7abd32244c">{label}</span>
+        {sortField === field ?
+      sortDir === 'asc' ? <ArrowUp className="w-3 h-3" /> : <ArrowDown className="w-3 h-3" /> :
+
+      <ArrowUpDown className="w-3 h-3 opacity-30" />
+      }
+      </div>
+    </th>;
+
+
+  const handleExpenseSort = (field: SortField) => {
+    if (expenseSortField === field) {
+      setExpenseSortDir(expenseSortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setExpenseSortField(field);
+      setExpenseSortDir('desc');
+    }
+  };
+
+  const handleIncomeSort = (field: SortField) => {
+    if (incomeSortField === field) {
+      setIncomeSortDir(incomeSortDir === 'asc' ? 'desc' : 'asc');
+    } else {
+      setIncomeSortField(field);
+      setIncomeSortDir('desc');
+    }
+  };
 
   // Dropdown component
   const FilterDropdown = ({
@@ -321,8 +435,8 @@ export default function Analytics() {
   }: {id: string;label: string;options: {id: string;name: string;}[];selected: string[];onToggle: (value: string) => void;}) => {
     const isOpen = openDropdown === id;
     return (
-      <div data-ev-id="ev_8aacc8b60b" className="relative">
-        <button data-ev-id="ev_a2534a1269"
+      <div data-ev-id="ev_ccd735a871" className="relative">
+        <button data-ev-id="ev_dd3792ceac"
         onClick={() => setOpenDropdown(isOpen ? null : id)}
         className={`flex items-center gap-2 px-3 py-2 border rounded-lg text-sm transition-colors ${
         selected.length > 0 ?
@@ -330,32 +444,32 @@ export default function Analytics() {
         'border-border hover:bg-muted'}`
         }>
 
-          <span data-ev-id="ev_3c120eab0b">{label}</span>
+          <span data-ev-id="ev_a2517e7d55">{label}</span>
           {selected.length > 0 &&
-          <span data-ev-id="ev_e9d9617a09" className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs">
+          <span data-ev-id="ev_56a2d6ee19" className="bg-primary text-primary-foreground px-1.5 py-0.5 rounded text-xs">
               {selected.length}
             </span>
           }
           {isOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
         </button>
         {isOpen &&
-        <div data-ev-id="ev_9cf25a693d" className="absolute top-full mt-1 right-0 bg-card border border-border rounded-lg shadow-lg p-2 z-20 min-w-[200px] max-h-[300px] overflow-y-auto">
+        <div data-ev-id="ev_8a74595f78" className="absolute top-full mt-1 right-0 bg-card border border-border rounded-lg shadow-lg p-2 z-20 min-w-[200px] max-h-[300px] overflow-y-auto">
             {options.map((opt) =>
-          <label data-ev-id="ev_bfc5469f2c"
+          <label data-ev-id="ev_c3f025bfb6"
           key={opt.id}
           className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted rounded cursor-pointer">
 
-                <input data-ev-id="ev_76350f3038"
+                <input data-ev-id="ev_6a116b9a8e"
             type="checkbox"
             checked={selected.includes(opt.id)}
             onChange={() => onToggle(opt.id)}
             className="rounded border-border" />
 
-                <span data-ev-id="ev_168a23ed85" className="text-sm">{opt.name}</span>
+                <span data-ev-id="ev_8bb8a53f7d" className="text-sm">{opt.name}</span>
               </label>
           )}
             {options.length === 0 &&
-          <p data-ev-id="ev_9eb288ff3a" className="text-sm text-muted-foreground p-2">אין אפשרויות</p>
+          <p data-ev-id="ev_b03c94dadb" className="text-sm text-muted-foreground p-2">אין אפשרויות</p>
           }
           </div>
         }
@@ -369,83 +483,144 @@ export default function Analytics() {
   filters.paymentMethods.length > 0 ||
   filters.incomeSources.length > 0;
 
+  const monthName = selectedMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
+  const rangeDisplayName = isRangeMode ?
+  `${formatMonthHebrew(rangeStart)} - ${formatMonthHebrew(rangeEnd)}` :
+  monthName;
+
+  // Format amount - positive values without minus, negative (credits) in green with minus on left
+  const formatAmount = (amount: number, isCredit = false) => {
+    const absAmount = Math.abs(amount);
+    if (amount < 0 || isCredit) {
+      return <span data-ev-id="ev_fa87bb70be" className="text-green-600">₪{absAmount.toLocaleString()}−</span>;
+    }
+    return <>₪{absAmount.toLocaleString()}</>;
+  };
+
   return (
     <Layout>
-      <div data-ev-id="ev_709ccebfff" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
+      <div data-ev-id="ev_356111919e" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
         {/* Header */}
-        <div data-ev-id="ev_26476b596f" className="flex items-center justify-between">
-          <div data-ev-id="ev_d2f53ba9df" className="flex items-center gap-3">
+        <div data-ev-id="ev_658e4c87e5" className="flex items-center justify-between">
+          <div data-ev-id="ev_c3b4c73090" className="flex items-center gap-3">
             <Calculator className="w-6 h-6 text-primary" />
-            <h2 data-ev-id="ev_29ec61f0ee" className="text-2xl font-bold text-foreground">חישובים מתקדמים</h2>
+            <h2 data-ev-id="ev_b36aeab057" className="text-2xl font-bold text-foreground">חישובים מתקדמים</h2>
           </div>
         </div>
 
-        {/* Month range selector */}
-        <Card>
-          <div data-ev-id="ev_52816fcb5a" className="flex flex-wrap items-center gap-4">
-            <div data-ev-id="ev_b2e8447f02" className="flex items-center gap-2">
-              <label data-ev-id="ev_e59db731af" className="text-sm text-muted-foreground">מחודש:</label>
-              <input data-ev-id="ev_4f35ac2ea0"
-              type="month"
-              value={rangeStart}
-              onChange={(e) => setRangeStart(e.target.value)}
-              className="px-3 py-2 border border-border rounded-md bg-background text-sm" />
+        {/* Sticky month navigation - same style as Home */}
+        <div data-ev-id="ev_6abf37a2ab" className="sticky top-0 z-10 bg-background/95 backdrop-blur-sm py-2 -mx-4 px-4 md:-mx-6 md:px-6">
+          <div data-ev-id="ev_282e0b96ef" className="flex items-center justify-center gap-2 bg-card border border-border rounded-lg p-2 shadow-sm">
+            {!isRangeMode &&
+            <>
+                <button data-ev-id="ev_438db048b2"
+              onClick={goToNextMonth}
+              className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              title="חודש הבא">
 
-            </div>
-            <div data-ev-id="ev_ab10b654c9" className="flex items-center gap-2">
-              <label data-ev-id="ev_f8fb793e83" className="text-sm text-muted-foreground">עד חודש:</label>
-              <input data-ev-id="ev_e15c40ea51"
-              type="month"
-              value={rangeEnd}
-              onChange={(e) => setRangeEnd(e.target.value)}
-              className="px-3 py-2 border border-border rounded-md bg-background text-sm" />
+                  <ChevronRight className="w-5 h-5" />
+                </button>
+                <span data-ev-id="ev_215ff40dce" className="font-medium text-foreground min-w-[120px] text-center">
+                  {monthName}
+                </span>
+                <button data-ev-id="ev_c9ec9293e9"
+              onClick={goToPrevMonth}
+              className="p-2 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              title="חודש קודם">
 
-            </div>
-            {/* Quick selections */}
-            <div data-ev-id="ev_cfe4e99ab5" className="flex gap-2">
-              <button data-ev-id="ev_2d12e9532c"
-              onClick={() => {
-                const now = new Date();
-                const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const start = new Date(now.getFullYear(), now.getMonth() - 2, 1);
-                setRangeStart(`${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`);
-                setRangeEnd(end);
-              }}
-              className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-sm rounded-md">
+                  <ChevronLeft className="w-5 h-5" />
+                </button>
+              </>
+            }
+            {isRangeMode &&
+            <>
+                <span data-ev-id="ev_e50edb49b3" className="font-medium text-foreground text-center">
+                  {rangeDisplayName}
+                </span>
+                <button data-ev-id="ev_4169a0680e"
+              onClick={exitRangeMode}
+              className="p-1 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors"
+              title="חזרה לתצוגת חודש">
 
-                3 חודשים
-              </button>
-              <button data-ev-id="ev_6b34f1a144"
-              onClick={() => {
-                const now = new Date();
-                const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const start = new Date(now.getFullYear(), now.getMonth() - 5, 1);
-                setRangeStart(`${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`);
-                setRangeEnd(end);
-              }}
-              className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-sm rounded-md">
+                  <X className="w-4 h-4" />
+                </button>
+              </>
+            }
+            <div data-ev-id="ev_bbb4711b12" className="border-r border-border h-6 mx-1" />
+            <button data-ev-id="ev_f1f12389e8"
+            onClick={() => setShowRangeModal(true)}
+            className="px-3 py-1.5 hover:bg-muted rounded-md text-muted-foreground hover:text-foreground transition-colors text-sm"
+            title="בחירת טווח חודשים">
 
-                6 חודשים
-              </button>
-              <button data-ev-id="ev_4246683c0e"
-              onClick={() => {
-                const now = new Date();
-                const end = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-                const start = new Date(now.getFullYear(), now.getMonth() - 11, 1);
-                setRangeStart(`${start.getFullYear()}-${String(start.getMonth() + 1).padStart(2, '0')}`);
-                setRangeEnd(end);
-              }}
-              className="px-3 py-1.5 bg-muted hover:bg-muted/80 text-sm rounded-md">
-
-                12 חודשים
-              </button>
-            </div>
+              טווח
+            </button>
           </div>
-        </Card>
+        </div>
+
+        {/* Range selection modal */}
+        {showRangeModal &&
+        <div data-ev-id="ev_c3aa23f7bc" className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setShowRangeModal(false)}>
+            <Card className="p-6 w-full max-w-md mx-4" onClick={(e) => e.stopPropagation()}>
+              <div data-ev-id="ev_86639ad74a" className="flex justify-between items-center mb-4">
+                <h3 data-ev-id="ev_fec65f2498" className="font-semibold text-lg">בחירת טווח חודשים</h3>
+                <button data-ev-id="ev_8abb2c9569" onClick={() => setShowRangeModal(false)} className="p-1 hover:bg-muted rounded">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              
+              {/* Quick selections */}
+              <div data-ev-id="ev_080661e088" className="flex flex-wrap gap-2 mb-4">
+                <button data-ev-id="ev_f1e06be0e6"
+              onClick={() => selectLastNMonths(3)}
+              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-sm font-medium">
+
+                  3 חודשים
+                </button>
+                <button data-ev-id="ev_b764bb63dd"
+              onClick={() => selectLastNMonths(6)}
+              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-sm font-medium">
+
+                  6 חודשים
+                </button>
+                <button data-ev-id="ev_3a8a22e823"
+              onClick={() => selectLastNMonths(12)}
+              className="px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary rounded-md text-sm font-medium">
+
+                  12 חודשים
+                </button>
+              </div>
+
+              {/* Custom range */}
+              <div data-ev-id="ev_1d88d5f56e" className="space-y-3">
+                <p data-ev-id="ev_228a7b8f86" className="text-sm text-muted-foreground">או בחר טווח מותאם אישית:</p>
+                <div data-ev-id="ev_4c1018c204" className="flex gap-3 items-center">
+                  <div data-ev-id="ev_12935652eb" className="flex-1">
+                    <label data-ev-id="ev_05c6e36eb7" className="text-sm text-muted-foreground block mb-1">מחודש</label>
+                    <MonthPicker value={rangeStart} onChange={setRangeStart} />
+                  </div>
+                  <span data-ev-id="ev_e465f63b4a" className="text-muted-foreground mt-5">עד</span>
+                  <div data-ev-id="ev_2eab88e971" className="flex-1">
+                    <label data-ev-id="ev_5d63166b3e" className="text-sm text-muted-foreground block mb-1">עד חודש</label>
+                    <MonthPicker value={rangeEnd} onChange={setRangeEnd} />
+                  </div>
+                </div>
+                <button data-ev-id="ev_94d0e28f15"
+              onClick={() => {
+                setIsRangeMode(true);
+                setShowRangeModal(false);
+              }}
+              className="w-full py-2 bg-primary text-primary-foreground rounded-md font-medium hover:bg-primary/90">
+
+                  הצג סיכום
+                </button>
+              </div>
+            </Card>
+          </div>
+        }
 
         {/* Tabs */}
-        <div data-ev-id="ev_3dda29b954" className="flex gap-2 border-b border-border">
-          <button data-ev-id="ev_37e63c08dd"
+        <div data-ev-id="ev_cfb49ab529" className="flex gap-2 border-b border-border">
+          <button data-ev-id="ev_ad3dec111d"
           onClick={() => setActiveTab('expenses')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
           activeTab === 'expenses' ?
@@ -453,12 +628,12 @@ export default function Analytics() {
           'border-transparent text-muted-foreground hover:text-foreground'}`
           }>
 
-            <div data-ev-id="ev_a95edf52f5" className="flex items-center gap-2">
+            <div data-ev-id="ev_b15fe41d91" className="flex items-center gap-2">
               <TrendingDown className="w-4 h-4" />
               הוצאות
             </div>
           </button>
-          <button data-ev-id="ev_7ec34cb77f"
+          <button data-ev-id="ev_f8cbd00854"
           onClick={() => setActiveTab('incomes')}
           className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
           activeTab === 'incomes' ?
@@ -466,7 +641,7 @@ export default function Analytics() {
           'border-transparent text-muted-foreground hover:text-foreground'}`
           }>
 
-            <div data-ev-id="ev_e55064845b" className="flex items-center gap-2">
+            <div data-ev-id="ev_85d5a05d33" className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4" />
               הכנסות
             </div>
@@ -475,11 +650,11 @@ export default function Analytics() {
 
         {/* Filters */}
         <Card>
-          <div data-ev-id="ev_694bbe7085" className="flex items-center gap-2 mb-3">
+          <div data-ev-id="ev_9196ed8daf" className="flex items-center gap-2 mb-3">
             <Filter className="w-4 h-4 text-muted-foreground" />
-            <span data-ev-id="ev_331b7aeea4" className="text-sm font-medium">סינון</span>
+            <span data-ev-id="ev_cd4f1945a7" className="text-sm font-medium">סינון</span>
             {hasActiveFilters &&
-            <button data-ev-id="ev_84237f0332"
+            <button data-ev-id="ev_4d967f552f"
             onClick={clearFilters}
             className="text-xs text-primary hover:underline flex items-center gap-1 mr-auto">
 
@@ -488,7 +663,7 @@ export default function Analytics() {
               </button>
             }
           </div>
-          <div data-ev-id="ev_e2970f7d83" className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
+          <div data-ev-id="ev_4de8234a17" className="flex flex-wrap gap-2" onClick={(e) => e.stopPropagation()}>
             {activeTab === 'expenses' &&
             <>
                 <FilterDropdown
@@ -527,50 +702,50 @@ export default function Analytics() {
         </Card>
 
         {loading ?
-        <div data-ev-id="ev_b904094fdc" className="flex justify-center py-12">
-            <div data-ev-id="ev_2de207798e" className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
+        <div data-ev-id="ev_8d2e4c51e4" className="flex justify-center py-12">
+            <div data-ev-id="ev_c4f897f16c" className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full" />
           </div> :
 
         <>
             {/* Expenses tab content */}
             {activeTab === 'expenses' &&
-          <div data-ev-id="ev_c8488d9735" className="flex flex-col gap-4">
+          <div data-ev-id="ev_72631dfc35" className="flex flex-col gap-4">
                 {/* Summary cards */}
-                <div data-ev-id="ev_46b45f1f6a" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div data-ev-id="ev_4374d4d600" className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_b8f492c97b" className="text-xs text-muted-foreground">סה"כ הוצאות</span>
-                    <p data-ev-id="ev_ab142b6ece" className="text-xl font-bold text-red-600">
+                    <span data-ev-id="ev_90c4c9e036" className="text-xs text-muted-foreground">סה"כ הוצאות</span>
+                    <p data-ev-id="ev_350e3dd0bc" className="text-xl font-bold text-red-600">
                       ₪{expenseStats.total.toLocaleString()}
                     </p>
-                    <span data-ev-id="ev_7da9595ed3" className="text-xs text-muted-foreground">{expenseStats.count} פריטים</span>
+                    <span data-ev-id="ev_7ae37ccc30" className="text-xs text-muted-foreground">{expenseStats.count} פריטים</span>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_18481c8b05" className="text-xs text-muted-foreground">ממוצע חודשי</span>
-                    <p data-ev-id="ev_41c64f7a84" className="text-xl font-bold text-foreground">
+                    <span data-ev-id="ev_ef66fc2a4b" className="text-xs text-muted-foreground">ממוצע חודשי</span>
+                    <p data-ev-id="ev_6a1fade944" className="text-xl font-bold text-foreground">
                       ₪{Math.round(expenseStats.avgMonthly).toLocaleString()}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_c5143cb1c3" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
-                    <p data-ev-id="ev_34abc0277d" className="text-lg font-bold text-red-600">
+                    <span data-ev-id="ev_a7d7c01a0c" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
+                    <p data-ev-id="ev_ff140945c1" className="text-lg font-bold text-red-600">
                       {expenseStats.highestMonth ?
                   <>
                           ₪{expenseStats.highestMonth.amount.toLocaleString()}
-                          <span data-ev-id="ev_1a205aae61" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthStr(expenseStats.highestMonth.month)}
+                          <span data-ev-id="ev_908f928a03" className="text-xs text-muted-foreground font-normal block">
+                            {formatMonthHebrew(expenseStats.highestMonth.month)}
                           </span>
                         </> :
                   '-'}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_e13afe2c56" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
-                    <p data-ev-id="ev_cb0fb9da0d" className="text-lg font-bold text-green-600">
+                    <span data-ev-id="ev_28a5addda4" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
+                    <p data-ev-id="ev_b626b72326" className="text-lg font-bold text-green-600">
                       {expenseStats.lowestMonth ?
                   <>
                           ₪{expenseStats.lowestMonth.amount.toLocaleString()}
-                          <span data-ev-id="ev_67fe8d4df0" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthStr(expenseStats.lowestMonth.month)}
+                          <span data-ev-id="ev_9f3118eebb" className="text-xs text-muted-foreground font-normal block">
+                            {formatMonthHebrew(expenseStats.lowestMonth.month)}
                           </span>
                         </> :
                   '-'}
@@ -580,36 +755,38 @@ export default function Analytics() {
 
                 {/* Category breakdown table */}
                 <Card>
-                  <h3 data-ev-id="ev_ac52f5bfa7" className="font-semibold text-foreground mb-3">פירוט לפי קטגוריה</h3>
-                  {expenseStats.categoryBreakdown.length > 0 ?
-              <div data-ev-id="ev_dcf86e9630" className="overflow-x-auto">
-                      <table data-ev-id="ev_2429049d8a" className="w-full text-sm">
-                        <thead data-ev-id="ev_2ff028848b">
-                          <tr data-ev-id="ev_7fffc85ce1" className="border-b border-border">
-                            <th data-ev-id="ev_a03776001e" className="text-right py-2 px-2 font-medium text-muted-foreground">קטגוריה</th>
-                            <th data-ev-id="ev_6be948765b" className="text-right py-2 px-2 font-medium text-muted-foreground">מספר</th>
-                            <th data-ev-id="ev_1f089bacb1" className="text-right py-2 px-2 font-medium text-muted-foreground">סה"כ</th>
-                            <th data-ev-id="ev_0432a89edf" className="text-right py-2 px-2 font-medium text-muted-foreground">ממוצע</th>
-                            <th data-ev-id="ev_2654df38f2" className="text-right py-2 px-2 font-medium text-muted-foreground">גבוה</th>
-                            <th data-ev-id="ev_53bf02a74d" className="text-right py-2 px-2 font-medium text-muted-foreground">נמוך</th>
+                  <h3 data-ev-id="ev_cfd312cabc" className="font-semibold text-foreground mb-3">פירוט לפי קטגוריה</h3>
+                  {sortedCategoryBreakdown.length > 0 ?
+              <div data-ev-id="ev_40d6785584" className="overflow-x-auto">
+                      <table data-ev-id="ev_e4031259f5" className="w-full text-sm">
+                        <thead data-ev-id="ev_a7105ddc9b">
+                          <tr data-ev-id="ev_229091edb5" className="border-b border-border">
+                            <SortHeader field="categoryName" label="קטגוריה" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
+                            <SortHeader field="count" label="מספר" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
+                            <SortHeader field="total" label="סהכ" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
+                            <SortHeader field="avg" label="ממוצע" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
+                            <SortHeader field="highest" label="גבוה" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
+                            <SortHeader field="lowest" label="נמוך" sortField={expenseSortField} sortDir={expenseSortDir} onSort={handleExpenseSort} />
                           </tr>
                         </thead>
-                        <tbody data-ev-id="ev_67876e85cc">
-                          {expenseStats.categoryBreakdown.map((cat) =>
-                    <tr data-ev-id="ev_c76b358b28" key={cat.categoryId} className="border-b border-border/50 hover:bg-muted/30">
-                              <td data-ev-id="ev_d3526ec0d1" className="py-2 px-2 font-medium">{cat.categoryName}</td>
-                              <td data-ev-id="ev_92b9e658ac" className="py-2 px-2 text-muted-foreground">{cat.count}</td>
-                              <td data-ev-id="ev_2de462f3cc" className="py-2 px-2 text-red-600 font-medium">₪{cat.total.toLocaleString()}</td>
-                              <td data-ev-id="ev_7e3e9c52df" className="py-2 px-2">₪{Math.round(cat.avg).toLocaleString()}</td>
-                              <td data-ev-id="ev_b032f4acdc" className="py-2 px-2">₪{cat.highest.toLocaleString()}</td>
-                              <td data-ev-id="ev_cb32dc9978" className="py-2 px-2">₪{cat.lowest.toLocaleString()}</td>
+                        <tbody data-ev-id="ev_e493a976d5">
+                          {sortedCategoryBreakdown.map((cat) =>
+                    <tr data-ev-id="ev_5399c7d242" key={cat.categoryId} className="border-b border-border/50 hover:bg-muted/30">
+                              <td data-ev-id="ev_447db840c2" className="py-2 px-2 font-medium">{cat.categoryName}</td>
+                              <td data-ev-id="ev_b7577bac8f" className="py-2 px-2 text-muted-foreground">{cat.count}</td>
+                              <td data-ev-id="ev_e57eb186cf" className={`py-2 px-2 font-medium ${cat.total < 0 ? 'text-green-600' : 'text-red-600'}`}>
+                                {formatAmount(cat.total, cat.total < 0)}
+                              </td>
+                              <td data-ev-id="ev_ab526c9524" className="py-2 px-2">₪{Math.round(Math.abs(cat.avg)).toLocaleString()}</td>
+                              <td data-ev-id="ev_258f10aed0" className="py-2 px-2">₪{Math.abs(cat.highest).toLocaleString()}</td>
+                              <td data-ev-id="ev_39482864aa" className="py-2 px-2">₪{Math.abs(cat.lowest).toLocaleString()}</td>
                             </tr>
                     )}
                         </tbody>
                       </table>
                     </div> :
 
-              <p data-ev-id="ev_709d398d62" className="text-muted-foreground text-center py-4">אין נתונים להצגה</p>
+              <p data-ev-id="ev_d57fe33bfd" className="text-muted-foreground text-center py-4">אין נתונים להצגה</p>
               }
                 </Card>
               </div>
@@ -617,43 +794,43 @@ export default function Analytics() {
 
             {/* Incomes tab content */}
             {activeTab === 'incomes' &&
-          <div data-ev-id="ev_340a0207fa" className="flex flex-col gap-4">
+          <div data-ev-id="ev_e2da8cbdc6" className="flex flex-col gap-4">
                 {/* Summary cards */}
-                <div data-ev-id="ev_e764b67e29" className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div data-ev-id="ev_2febb0c810" className="grid grid-cols-2 md:grid-cols-4 gap-4">
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_b3becf9db7" className="text-xs text-muted-foreground">סה"כ הכנסות</span>
-                    <p data-ev-id="ev_d196f452a3" className="text-xl font-bold text-green-600">
+                    <span data-ev-id="ev_884a0f3401" className="text-xs text-muted-foreground">סה"כ הכנסות</span>
+                    <p data-ev-id="ev_2a9bbc886b" className="text-xl font-bold text-green-600">
                       ₪{incomeStats.total.toLocaleString()}
                     </p>
-                    <span data-ev-id="ev_51c600e028" className="text-xs text-muted-foreground">{incomeStats.count} פריטים</span>
+                    <span data-ev-id="ev_05f092d266" className="text-xs text-muted-foreground">{incomeStats.count} פריטים</span>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_f3c7df4325" className="text-xs text-muted-foreground">ממוצע חודשי</span>
-                    <p data-ev-id="ev_79b2a4fb47" className="text-xl font-bold text-foreground">
+                    <span data-ev-id="ev_bb1b41454d" className="text-xs text-muted-foreground">ממוצע חודשי</span>
+                    <p data-ev-id="ev_0ee37cbdd3" className="text-xl font-bold text-foreground">
                       ₪{Math.round(incomeStats.avgMonthly).toLocaleString()}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_b831143d37" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
-                    <p data-ev-id="ev_21444ca77d" className="text-lg font-bold text-green-600">
+                    <span data-ev-id="ev_9f94778b7f" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
+                    <p data-ev-id="ev_fa032a0d3c" className="text-lg font-bold text-green-600">
                       {incomeStats.highestMonth ?
                   <>
                           ₪{incomeStats.highestMonth.amount.toLocaleString()}
-                          <span data-ev-id="ev_5fda1b3e7d" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthStr(incomeStats.highestMonth.month)}
+                          <span data-ev-id="ev_ffcd99d27e" className="text-xs text-muted-foreground font-normal block">
+                            {formatMonthHebrew(incomeStats.highestMonth.month)}
                           </span>
                         </> :
                   '-'}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
-                    <span data-ev-id="ev_7ef896b21e" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
-                    <p data-ev-id="ev_5381430e7c" className="text-lg font-bold text-red-600">
+                    <span data-ev-id="ev_399c3af7a5" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
+                    <p data-ev-id="ev_45f438f1a1" className="text-lg font-bold text-red-600">
                       {incomeStats.lowestMonth ?
                   <>
                           ₪{incomeStats.lowestMonth.amount.toLocaleString()}
-                          <span data-ev-id="ev_d6e61e826b" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthStr(incomeStats.lowestMonth.month)}
+                          <span data-ev-id="ev_ad9557a8a3" className="text-xs text-muted-foreground font-normal block">
+                            {formatMonthHebrew(incomeStats.lowestMonth.month)}
                           </span>
                         </> :
                   '-'}
@@ -663,36 +840,36 @@ export default function Analytics() {
 
                 {/* Source breakdown table */}
                 <Card>
-                  <h3 data-ev-id="ev_6878df55b8" className="font-semibold text-foreground mb-3">פירוט לפי מקור הכנסה</h3>
-                  {incomeStats.sourceBreakdown.length > 0 ?
-              <div data-ev-id="ev_67b4d4d252" className="overflow-x-auto">
-                      <table data-ev-id="ev_55b4a55fae" className="w-full text-sm">
-                        <thead data-ev-id="ev_4abf767e68">
-                          <tr data-ev-id="ev_b345eae272" className="border-b border-border">
-                            <th data-ev-id="ev_91e72ae330" className="text-right py-2 px-2 font-medium text-muted-foreground">מקור</th>
-                            <th data-ev-id="ev_a338c86ec1" className="text-right py-2 px-2 font-medium text-muted-foreground">מספר</th>
-                            <th data-ev-id="ev_232686ffc8" className="text-right py-2 px-2 font-medium text-muted-foreground">סה"כ</th>
-                            <th data-ev-id="ev_a6cd37aa7b" className="text-right py-2 px-2 font-medium text-muted-foreground">ממוצע</th>
-                            <th data-ev-id="ev_84ea59d4b6" className="text-right py-2 px-2 font-medium text-muted-foreground">גבוה</th>
-                            <th data-ev-id="ev_880c8f10ee" className="text-right py-2 px-2 font-medium text-muted-foreground">נמוך</th>
+                  <h3 data-ev-id="ev_4a10f5b5fa" className="font-semibold text-foreground mb-3">פירוט לפי מקור הכנסה</h3>
+                  {sortedSourceBreakdown.length > 0 ?
+              <div data-ev-id="ev_e73bab7b6f" className="overflow-x-auto">
+                      <table data-ev-id="ev_54d82e29e0" className="w-full text-sm">
+                        <thead data-ev-id="ev_bc3e9ffe3e">
+                          <tr data-ev-id="ev_bcc5996008" className="border-b border-border">
+                            <SortHeader field="sourceName" label="מקור" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
+                            <SortHeader field="count" label="מספר" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
+                            <SortHeader field="total" label="סהכ" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
+                            <SortHeader field="avg" label="ממוצע" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
+                            <SortHeader field="highest" label="גבוה" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
+                            <SortHeader field="lowest" label="נמוך" sortField={incomeSortField} sortDir={incomeSortDir} onSort={handleIncomeSort} />
                           </tr>
                         </thead>
-                        <tbody data-ev-id="ev_9ece14c612">
-                          {incomeStats.sourceBreakdown.map((src) =>
-                    <tr data-ev-id="ev_31d88fd52a" key={src.source} className="border-b border-border/50 hover:bg-muted/30">
-                              <td data-ev-id="ev_96ee43d00e" className="py-2 px-2 font-medium">{src.sourceName}</td>
-                              <td data-ev-id="ev_bff2158230" className="py-2 px-2 text-muted-foreground">{src.count}</td>
-                              <td data-ev-id="ev_d6d4925f61" className="py-2 px-2 text-green-600 font-medium">₪{src.total.toLocaleString()}</td>
-                              <td data-ev-id="ev_fb949c766c" className="py-2 px-2">₪{Math.round(src.avg).toLocaleString()}</td>
-                              <td data-ev-id="ev_bde58a31a8" className="py-2 px-2">₪{src.highest.toLocaleString()}</td>
-                              <td data-ev-id="ev_9ff27c819f" className="py-2 px-2">₪{src.lowest.toLocaleString()}</td>
+                        <tbody data-ev-id="ev_c27918c194">
+                          {sortedSourceBreakdown.map((src) =>
+                    <tr data-ev-id="ev_9b1b5553c7" key={src.source} className="border-b border-border/50 hover:bg-muted/30">
+                              <td data-ev-id="ev_2a0f3fb000" className="py-2 px-2 font-medium">{src.sourceName}</td>
+                              <td data-ev-id="ev_5007290a57" className="py-2 px-2 text-muted-foreground">{src.count}</td>
+                              <td data-ev-id="ev_b7ccd90ea2" className="py-2 px-2 text-green-600 font-medium">₪{src.total.toLocaleString()}</td>
+                              <td data-ev-id="ev_a125ca2fb7" className="py-2 px-2">₪{Math.round(src.avg).toLocaleString()}</td>
+                              <td data-ev-id="ev_631ffee9bf" className="py-2 px-2">₪{src.highest.toLocaleString()}</td>
+                              <td data-ev-id="ev_d906d03c0c" className="py-2 px-2">₪{src.lowest.toLocaleString()}</td>
                             </tr>
                     )}
                         </tbody>
                       </table>
                     </div> :
 
-              <p data-ev-id="ev_f5131d4a6c" className="text-muted-foreground text-center py-4">אין נתונים להצגה</p>
+              <p data-ev-id="ev_6d8d008be5" className="text-muted-foreground text-center py-4">אין נתונים להצגה</p>
               }
                 </Card>
               </div>
@@ -703,7 +880,7 @@ export default function Analytics() {
 
       {/* Click outside to close dropdowns */}
       {openDropdown &&
-      <div data-ev-id="ev_3f12628a93"
+      <div data-ev-id="ev_487ea556a2"
       className="fixed inset-0 z-10"
       onClick={() => setOpenDropdown(null)} />
 
