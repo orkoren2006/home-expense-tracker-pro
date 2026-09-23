@@ -1,35 +1,33 @@
 {
-  "summary": "השלמת עבודה קודמת + עמוד הערות חדש",
+  "summary": "שיפורי מסך בית + עמוד חישובים מתקדמים",
   "todos": [
     {
       "id": 1,
-      "description": "השלמת הגדרות עמודות כללים + מיגרציה",
+      "description": "תובנות אשראי מחודשים קודמים במסך הבית",
       "files": [
-        "supabase migration",
-        "src/types/index.ts"
+        "src/pages/Home.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 2,
-      "description": "העברת UI עמודות כללים להגדרות",
+      "description": "בורר טווח חודשים + ריבועי סיכום מורחבים",
       "files": [
-        "src/pages/Settings.tsx",
-        "src/pages/Rules.tsx"
+        "src/pages/Home.tsx"
       ],
       "status": "complete"
     },
     {
       "id": 3,
-      "description": "יצירת עמוד הערות חדש עם תיוג חודשי",
+      "description": "עמוד חישובים מתקדמים עם פילטרים וטבלת פירוט",
       "files": [
-        "supabase migration",
-        "src/pages/Notes.tsx",
+        "src/pages/Analytics.tsx",
+        "src/App.tsx",
         "src/components/Layout.tsx"
       ],
       "status": "complete"
     }
   ],
-  "createdAt": "2026-09-20T07:13:20.349Z",
-  "updatedAt": "2026-09-20T07:17:42.155Z"
+  "createdAt": "2026-09-23T14:52:13.809Z",
+  "updatedAt": "2026-09-23T15:01:50.710Z"
 }

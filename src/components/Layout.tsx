@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router';
-import { Home, Upload, Settings, List, FileText, Wallet, TrendingDown, StickyNote } from 'lucide-react';
+import { Home, Upload, Settings, List, FileText, Wallet, TrendingDown, StickyNote, Calculator } from 'lucide-react';
 import { useHousehold } from '@/hooks/useHousehold';
 
 interface LayoutProps {
@@ -17,6 +17,7 @@ export function Layout({ children }: LayoutProps) {
   { path: '/incomes', icon: Wallet, label: 'הכנסות' },
   { path: '/cash-flow', icon: TrendingDown, label: 'תזרים' },
   { path: '/notes', icon: StickyNote, label: 'הערות' },
+  { path: '/analytics', icon: Calculator, label: 'חישובים' },
   { path: '/rules', icon: FileText, label: 'כללי הוצאות' },
   { path: '/income-rules', icon: FileText, label: 'כללי הכנסות' },
   { path: '/import', icon: Upload, label: 'ייבוא הוצאות' },
