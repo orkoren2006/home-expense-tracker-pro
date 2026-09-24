@@ -542,27 +542,27 @@ export default function Home() {
               </p>
             </Card>
 
-            {/* Expense types - 3 small boxes */}
-            <div data-ev-id="ev_0b5f15731a" className="flex gap-2">
-              <Card className="flex-1 flex flex-col gap-1 p-3">
-                <span data-ev-id="ev_6d024ba335" className="text-xs text-muted-foreground">חובה</span>
-                <p data-ev-id="ev_dd80cf9923" className="text-sm font-bold text-foreground">
+            {/* Expense types - single box with 3 rows */}
+            <Card className="flex flex-col gap-2">
+              <div data-ev-id="ev_7e9b3385b4" className="flex items-center justify-between">
+                <span data-ev-id="ev_6d024ba335" className="text-sm text-muted-foreground">חובה</span>
+                <span data-ev-id="ev_a5cfb7f4b8" className="font-bold text-foreground">
                   {loading ? '...' : `₪${Math.round(mandatoryExpenses).toLocaleString()}`}
-                </p>
-              </Card>
-              <Card className="flex-1 flex flex-col gap-1 p-3">
-                <span data-ev-id="ev_77338ab88f" className="text-xs text-muted-foreground">לקצץ</span>
-                <p data-ev-id="ev_86d5a18610" className="text-sm font-bold text-foreground">
+                </span>
+              </div>
+              <div data-ev-id="ev_775cf1351c" className="flex items-center justify-between">
+                <span data-ev-id="ev_77338ab88f" className="text-sm text-muted-foreground">לקצץ</span>
+                <span data-ev-id="ev_c38a421e3a" className="font-bold text-foreground">
                   {loading ? '...' : `₪${Math.round(optionalExpenses).toLocaleString()}`}
-                </p>
-              </Card>
-              <Card className="flex-1 flex flex-col gap-1 p-3">
-                <span data-ev-id="ev_dc87369400" className="text-xs text-muted-foreground">מותרות</span>
-                <p data-ev-id="ev_62cc8ada65" className="text-sm font-bold text-foreground">
+                </span>
+              </div>
+              <div data-ev-id="ev_e29d6bb230" className="flex items-center justify-between">
+                <span data-ev-id="ev_dc87369400" className="text-sm text-muted-foreground">מותרות</span>
+                <span data-ev-id="ev_e56bdae277" className="font-bold text-foreground">
                   {loading ? '...' : `₪${Math.round(luxuryExpenses).toLocaleString()}`}
-                </p>
-              </Card>
-            </div>
+                </span>
+              </div>
+            </Card>
           </div> : (
 
         /* Range mode - expanded stats */
