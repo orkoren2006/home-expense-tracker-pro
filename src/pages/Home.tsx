@@ -538,7 +538,7 @@ export default function Home() {
                 <span data-ev-id="ev_cbc2382a33" className="text-sm">מאזן</span>
               </div>
               <p data-ev-id="ev_ec2487fe6e" className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {loading ? '...' : `${balance >= 0 ? '+' : '-'}₪${Math.round(Math.abs(balance)).toLocaleString()}`}
+                {loading ? '...' : `₪${Math.round(Math.abs(balance)).toLocaleString()}${balance >= 0 ? '+' : '-'}`}
               </p>
             </Card>
 
