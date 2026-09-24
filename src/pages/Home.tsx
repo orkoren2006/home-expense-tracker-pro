@@ -131,12 +131,12 @@ export default function Home() {
       let keepFetching = true;
 
       while (keepFetching) {
-        const { data: batch } = await supabase
-          .from('expenses')
-          .select('*')
-          .eq('household_id', household.id)
-          .eq('payment_method', 'credit')
-          .range(offset, offset + PAGE_SIZE - 1);
+        const { data: batch } = await supabase.
+        from('expenses').
+        select('*').
+        eq('household_id', household.id).
+        eq('payment_method', 'credit').
+        range(offset, offset + PAGE_SIZE - 1);
 
         if (batch && batch.length > 0) {
           allCreditExpenses = [...allCreditExpenses, ...(batch as Expense[])];
@@ -174,35 +174,35 @@ export default function Home() {
       // Filter months based on range mode
       let relevantMonths = Object.keys(byMonth);
       if (isRangeMode) {
-        relevantMonths = relevantMonths.filter(m => m >= rangeStart && m <= rangeEnd);
+        relevantMonths = relevantMonths.filter((m) => m >= rangeStart && m <= rangeEnd);
       }
 
       // Calculate "up to this day" for each month
       // Logic: if date month < billing_month -> always include (transaction was known from start of billing month)
       //        if date month == billing_month -> compare day numbers
-      const monthTotals = relevantMonths.map(billingMonth => {
+      const monthTotals = relevantMonths.map((billingMonth) => {
         const expenses = byMonth[billingMonth];
-        const upToDay = expenses
-          .filter(e => {
-            if (!e.date) return true; // Include if no date
-            const dateMonth = getMonthFromDate(e.date);
-            if (dateMonth < billingMonth) {
-              // Transaction date is from earlier month - always include
-              return true;
-            } else {
-              // Same month - compare day numbers
-              return getDayFromDate(e.date) <= currentDay;
-            }
-          })
-          .reduce((sum, e) => sum + Number(e.amount), 0);
+        const upToDay = expenses.
+        filter((e) => {
+          if (!e.date) return true; // Include if no date
+          const dateMonth = getMonthFromDate(e.date);
+          if (dateMonth < billingMonth) {
+            // Transaction date is from earlier month - always include
+            return true;
+          } else {
+            // Same month - compare day numbers
+            return getDayFromDate(e.date) <= currentDay;
+          }
+        }).
+        reduce((sum, e) => sum + Number(e.amount), 0);
         return { month: billingMonth, upToDay };
       });
 
       if (isRangeMode) {
         // Range mode: calculate from selected months only
-        const avgAmount = monthTotals.length > 0
-          ? monthTotals.reduce((sum, m) => sum + m.upToDay, 0) / monthTotals.length
-          : 0;
+        const avgAmount = monthTotals.length > 0 ?
+        monthTotals.reduce((sum, m) => sum + m.upToDay, 0) / monthTotals.length :
+        0;
 
         const sortedByUpToDay = [...monthTotals].sort((a, b) => b.upToDay - a.upToDay);
         const highestMonth = sortedByUpToDay[0] || null;
@@ -228,9 +228,9 @@ export default function Home() {
         const lastMonthAmount = lastMonthData?.upToDay || 0;
 
         // Average from all previous months
-        const avgAmount = previousMonths.length > 0
-          ? previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length
-          : 0;
+        const avgAmount = previousMonths.length > 0 ?
+        previousMonths.reduce((sum, m) => sum + m.upToDay, 0) / previousMonths.length :
+        0;
 
         // Highest and lowest (excluding current month), by upToDay
         const sortedByUpToDay = [...previousMonths].sort((a, b) => b.upToDay - a.upToDay);
@@ -368,6 +368,12 @@ export default function Home() {
   const balance = totalIncomes - totalExpenses;
   const mandatoryExpenses = monthlyExpenses.
   filter((e) => e.expense_type === 'mandatory').
+  reduce((sum, e) => sum + Number(e.amount), 0);
+  const optionalExpenses = monthlyExpenses.
+  filter((e) => e.expense_type === 'optional').
+  reduce((sum, e) => sum + Number(e.amount), 0);
+  const luxuryExpenses = monthlyExpenses.
+  filter((e) => e.expense_type === 'luxury').
   reduce((sum, e) => sum + Number(e.amount), 0);
 
   const monthName = selectedMonth.toLocaleDateString('he-IL', { month: 'long', year: 'numeric' });
@@ -512,7 +518,7 @@ export default function Home() {
                 <span data-ev-id="ev_6038c8fff2" className="text-sm">סה"כ הכנסות</span>
               </div>
               <p data-ev-id="ev_99581e8529" className="text-2xl font-bold text-green-600">
-                {loading ? '...' : `₪${totalIncomes.toLocaleString()}`}
+                {loading ? '...' : `₪${Math.round(totalIncomes).toLocaleString()}`}
               </p>
             </Card>
 
@@ -522,7 +528,7 @@ export default function Home() {
                 <span data-ev-id="ev_58f33946fa" className="text-sm">סה"כ הוצאות</span>
               </div>
               <p data-ev-id="ev_87546036f6" className="text-2xl font-bold text-red-600">
-                {loading ? '...' : `₪${totalExpenses.toLocaleString()}`}
+                {loading ? '...' : `₪${Math.round(totalExpenses).toLocaleString()}`}
               </p>
             </Card>
 
@@ -532,19 +538,31 @@ export default function Home() {
                 <span data-ev-id="ev_cbc2382a33" className="text-sm">מאזן</span>
               </div>
               <p data-ev-id="ev_ec2487fe6e" className={`text-2xl font-bold ${balance >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                {loading ? '...' : `₪${Math.abs(balance).toLocaleString()}`}
+                {loading ? '...' : `${balance >= 0 ? '+' : '-'}₪${Math.round(Math.abs(balance)).toLocaleString()}`}
               </p>
             </Card>
 
-            <Card className="flex flex-col gap-2">
-              <div data-ev-id="ev_4857848287" className="flex items-center gap-2 text-muted-foreground">
-                <CreditCard className="w-4 h-4" />
-                <span data-ev-id="ev_1fc88a6762" className="text-sm">הוצאות חובה</span>
-              </div>
-              <p data-ev-id="ev_0c02babec1" className="text-2xl font-bold text-foreground">
-                {loading ? '...' : `₪${mandatoryExpenses.toLocaleString()}`}
-              </p>
-            </Card>
+            {/* Expense types - 3 small boxes */}
+            <div data-ev-id="ev_0b5f15731a" className="flex gap-2">
+              <Card className="flex-1 flex flex-col gap-1 p-3">
+                <span data-ev-id="ev_6d024ba335" className="text-xs text-muted-foreground">חובה</span>
+                <p data-ev-id="ev_dd80cf9923" className="text-sm font-bold text-foreground">
+                  {loading ? '...' : `₪${Math.round(mandatoryExpenses).toLocaleString()}`}
+                </p>
+              </Card>
+              <Card className="flex-1 flex flex-col gap-1 p-3">
+                <span data-ev-id="ev_77338ab88f" className="text-xs text-muted-foreground">לקצץ</span>
+                <p data-ev-id="ev_86d5a18610" className="text-sm font-bold text-foreground">
+                  {loading ? '...' : `₪${Math.round(optionalExpenses).toLocaleString()}`}
+                </p>
+              </Card>
+              <Card className="flex-1 flex flex-col gap-1 p-3">
+                <span data-ev-id="ev_dc87369400" className="text-xs text-muted-foreground">מותרות</span>
+                <p data-ev-id="ev_62cc8ada65" className="text-sm font-bold text-foreground">
+                  {loading ? '...' : `₪${Math.round(luxuryExpenses).toLocaleString()}`}
+                </p>
+              </Card>
+            </div>
           </div> : (
 
         /* Range mode - expanded stats */
@@ -646,7 +664,7 @@ export default function Home() {
             <div data-ev-id="ev_caa800543b" className="bg-background/50 rounded-lg p-3">
                   <p data-ev-id="ev_0a1b7fe628" className="text-sm text-muted-foreground mb-1">חודש שעבר</p>
                   <p data-ev-id="ev_45fb6a06af" className="text-xl font-bold text-foreground">
-                    ₪{creditInsights.lastMonthAmount.toLocaleString()}
+                    ₪{Math.round(creditInsights.lastMonthAmount).toLocaleString()}
                   </p>
                 </div>
             }
@@ -667,7 +685,7 @@ export default function Home() {
             <div data-ev-id="ev_2a01e83926" className="bg-background/50 rounded-lg p-3">
                   <p data-ev-id="ev_dc6005568a" className="text-sm text-muted-foreground mb-1">החודש הגבוה ביותר</p>
                   <p data-ev-id="ev_51b061d8a0" className="text-xl font-bold text-red-600">
-                    ₪{creditInsights.highestMonth.amount.toLocaleString()}
+                    ₪{Math.round(creditInsights.highestMonth.amount).toLocaleString()}
                   </p>
                   <p data-ev-id="ev_880d04c28c" className="text-xs text-muted-foreground">
                     {formatMonthHebrew(creditInsights.highestMonth.month)}
@@ -680,7 +698,7 @@ export default function Home() {
             <div data-ev-id="ev_6af81b2b47" className="bg-background/50 rounded-lg p-3">
                   <p data-ev-id="ev_736a4a9367" className="text-sm text-muted-foreground mb-1">החודש הנמוך ביותר</p>
                   <p data-ev-id="ev_0028c28a78" className="text-xl font-bold text-green-600">
-                    ₪{creditInsights.lowestMonth.amount.toLocaleString()}
+                    ₪{Math.round(creditInsights.lowestMonth.amount).toLocaleString()}
                   </p>
                   <p data-ev-id="ev_abed996e1a" className="text-xs text-muted-foreground">
                     {formatMonthHebrew(creditInsights.lowestMonth.month)}
