@@ -97,7 +97,7 @@ export default function Home() {
     loadData();
   }, [household, selectedMonth]);
 
-  // Load credit insights - based on transaction DATE, not billing_month
+  // Load credit insights - grouped by billing_month, with pagination
   useEffect(() => {
     if (!supabase || !household) return;
 
@@ -108,37 +108,48 @@ export default function Home() {
 
       // Helper to extract month string (YYYY-MM) from date - parse directly to avoid timezone issues
       const getMonthFromDate = (dateStr: string): string => {
-        // Parse ISO format (YYYY-MM-DD) directly from string
         const parts = dateStr.split('T')[0].split('-');
         if (parts.length >= 2) {
           return `${parts[0]}-${parts[1]}`;
         }
-        // Fallback for other formats
-        const date = new Date(dateStr + 'T12:00:00');
-        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        return '';
       };
 
-      // Helper to extract day from date string - parse directly to avoid timezone issues
+      // Helper to extract day from date string
       const getDayFromDate = (dateStr: string): number => {
-        // Parse ISO format (YYYY-MM-DD) directly from string
         const parts = dateStr.split('T')[0].split('-');
         if (parts.length >= 3) {
           return parseInt(parts[2], 10);
         }
-        // Fallback for other formats
-        const date = new Date(dateStr + 'T12:00:00');
-        return date.getDate();
+        return 1;
       };
 
-      // Load ALL credit expenses (we'll filter by date, not billing_month)
-      const { data: allCreditExpenses } = await supabase
-        .from('expenses')
-        .select('*')
-        .eq('household_id', household.id)
-        .eq('payment_method', 'credit')
-        .not('date', 'is', null);
+      // Paginated fetch - Supabase limits to 1000 rows silently
+      const PAGE_SIZE = 1000;
+      let allCreditExpenses: Expense[] = [];
+      let offset = 0;
+      let keepFetching = true;
 
-      if (!allCreditExpenses || allCreditExpenses.length === 0) {
+      while (keepFetching) {
+        const { data: batch } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('household_id', household.id)
+          .eq('payment_method', 'credit')
+          .range(offset, offset + PAGE_SIZE - 1);
+
+        if (batch && batch.length > 0) {
+          allCreditExpenses = [...allCreditExpenses, ...(batch as Expense[])];
+          offset += PAGE_SIZE;
+          if (batch.length < PAGE_SIZE) {
+            keepFetching = false;
+          }
+        } else {
+          keepFetching = false;
+        }
+      }
+
+      if (allCreditExpenses.length === 0) {
         setCreditInsights({
           lastMonthAmount: 0,
           avgAmount: 0,
@@ -151,13 +162,13 @@ export default function Home() {
         return;
       }
 
-      // Group expenses by the MONTH from the DATE field (not billing_month)
+      // Group expenses by BILLING_MONTH (not date)
       const byMonth: Record<string, Expense[]> = {};
       allCreditExpenses.forEach((exp) => {
-        if (!exp.date) return;
-        const monthFromDate = getMonthFromDate(exp.date);
-        if (!byMonth[monthFromDate]) byMonth[monthFromDate] = [];
-        byMonth[monthFromDate].push(exp as Expense);
+        const billingMonth = exp.billing_month;
+        if (!billingMonth) return;
+        if (!byMonth[billingMonth]) byMonth[billingMonth] = [];
+        byMonth[billingMonth].push(exp);
       });
 
       // Filter months based on range mode
@@ -167,12 +178,24 @@ export default function Home() {
       }
 
       // Calculate "up to this day" for each month
-      const monthTotals = relevantMonths.map(month => {
-        const expenses = byMonth[month];
+      // Logic: if date month < billing_month -> always include (transaction was known from start of billing month)
+      //        if date month == billing_month -> compare day numbers
+      const monthTotals = relevantMonths.map(billingMonth => {
+        const expenses = byMonth[billingMonth];
         const upToDay = expenses
-          .filter(e => getDayFromDate(e.date) <= currentDay)
+          .filter(e => {
+            if (!e.date) return true; // Include if no date
+            const dateMonth = getMonthFromDate(e.date);
+            if (dateMonth < billingMonth) {
+              // Transaction date is from earlier month - always include
+              return true;
+            } else {
+              // Same month - compare day numbers
+              return getDayFromDate(e.date) <= currentDay;
+            }
+          })
           .reduce((sum, e) => sum + Number(e.amount), 0);
-        return { month, upToDay };
+        return { month: billingMonth, upToDay };
       });
 
       if (isRangeMode) {
