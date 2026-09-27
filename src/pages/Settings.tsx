@@ -1423,7 +1423,7 @@ export default function Settings() {
 
               <label data-ev-id="ev_a3fc729277" htmlFor="expense-rules-file" className={`inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Upload className="w-4 h-4" />
-                ייבא כללי הוצאות
+                ייבא הוצאות
               </label>
             </Card>
 
