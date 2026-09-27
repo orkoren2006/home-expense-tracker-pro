@@ -8,6 +8,8 @@ import { Input } from '@/components/ui/Input';
 import { Select } from '@/components/ui/Select';
 import { useHousehold } from '@/hooks/useHousehold';
 import { supabase } from '@/integrations/supabase/client';
+import { ImportExpensesForm } from './Import';
+import { ImportIncomesForm } from './ImportIncomes';
 import { parseRulesExcel, parseIncomeRulesExcel, autoDetectRuleMapping, autoDetectIncomeRuleMapping } from '@/utils/excelParsers';
 import * as XLSX from 'xlsx';
 import type { Frequency, AmountType, ExpenseType, PaymentMethod, ClassificationOption, IncomePaymentMethod, IncomeSource } from '@/types';
@@ -1405,28 +1407,7 @@ export default function Settings() {
             </Card>
 
             {/* Expense import - Or's addition */}
-            <Card>
-              <h3 data-ev-id="ev_707ba210af" className="font-semibold text-foreground mb-4">ייבוא הוצאות</h3>
-              <p data-ev-id="ev_c425ae97cd" className="text-muted-foreground mb-4">
-                טען קובץ אקסל עם שמות של הוצאות והסיווג שלהם. שדות אפשריים:
-              </p>
-              <ul data-ev-id="ev_e1882ac654" className="list-disc list-inside text-muted-foreground mb-4 mr-4 text-sm">
-                <li data-ev-id="ev_d3b579d644">שם הוצאה (חובה), קטגוריה, תדירות, סוג סכום, סוג הוצאה, אמצעי תשלום, כרטיס, הערות</li>
-              </ul>
-
-              <input data-ev-id="ev_ccc5b88e23"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={(e) => handleImportRulesFile(e, 'expense')}
-                className="hidden"
-                id="expense-rules-file" />
-
-              <label data-ev-id="ev_a3fc729277" htmlFor="expense-rules-file" className={`inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                <Upload className="w-4 h-4" />
-                ייבא הוצאות
-              </label>
-            </Card>
-
+          <ImportExpensesForm />
           </div>
         }
 
