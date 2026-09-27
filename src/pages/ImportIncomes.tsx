@@ -590,6 +590,14 @@ export function ImportIncomesForm() {
           </Card>
         }
       </div>
-        </>);
+    </>);
 
+}
+
+export default function ImportIncomes() {
+  return (
+    <Layout>
+      <ImportIncomesForm />
+    </Layout>
+  );
 }
