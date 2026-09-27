@@ -590,6 +590,6 @@ export function ImportIncomesForm() {
           </Card>
         }
       </div>
-    </Layout>);
+    </Layo
 
 }
