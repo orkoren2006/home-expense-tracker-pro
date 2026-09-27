@@ -20,8 +20,6 @@ export function Layout({ children }: LayoutProps) {
   { path: '/rules', icon: FileText, label: 'כללי הוצאות' },
   { path: '/income-rules', icon: FileText, label: 'כללי הכנסות' },
   { path: '/notes', icon: StickyNote, label: 'הערות' },
-  { path: '/import', icon: Upload, label: 'ייבוא הוצאות' },
-  { path: '/import-incomes', icon: Upload, label: 'ייבוא הכנסות' },
   { path: '/settings', icon: Settings, label: 'הגדרות' }];
 
 
