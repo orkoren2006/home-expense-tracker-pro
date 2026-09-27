@@ -584,3 +584,11 @@ export function ImportExpensesForm() {
     </>);
 
 }
+
+export default function Import() {
+  return (
+    <Layout>
+      <ImportExpensesForm />
+    </Layout>
+  );
+}
