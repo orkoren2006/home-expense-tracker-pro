@@ -812,37 +812,7 @@ export default function Home() {
             </div>);
         })()}
 
-        {/* Recent expenses */}
-        {monthlyExpenses.length > 0 &&
-        <div data-ev-id="ev_8f8e7c3d56">
-            <h3 data-ev-id="ev_d8131b928c" className="text-lg font-semibold text-foreground mb-4">הוצאות אחרונות</h3>
-            <Card variant="outlined" className="p-0 overflow-hidden">
-              <div data-ev-id="ev_3d754dfff9" className="divide-y divide-border">
-                {monthlyExpenses.slice(0, 5).map((expense) => {
-                const category = categories.find((c) => c.id === expense.category_id);
-                return (
-                  <div data-ev-id="ev_4764d79c0d" key={expense.id} className="flex items-center justify-between p-4">
-                      <div data-ev-id="ev_6186b63444">
-                        <p data-ev-id="ev_6640e2c76c" className="font-medium text-foreground">{expense.name}</p>
-                        <p data-ev-id="ev_a04125ea92" className="text-sm text-muted-foreground">
-                          {category?.name || 'ללא קטגוריה'}
-                        </p>
-                      </div>
-                      <div data-ev-id="ev_24a188d4d0" className="text-left">
-                        <p data-ev-id="ev_c19aab577f" className="font-semibold text-foreground">
-                          ₪{Number(expense.amount).toLocaleString()}
-                        </p>
-                        <p data-ev-id="ev_c97b7e1d94" className="text-sm text-muted-foreground">
-                          {new Date(expense.date).toLocaleDateString('he-IL')}
-                        </p>
-                      </div>
-                    </div>);
 
-              })}
-              </div>
-            </Card>
-          </div>
-        }
       </div>
     </Layout>);
 
