@@ -134,13 +134,15 @@ export default function Settings() {
   const [importRawData, setImportRawData] = useState<Record<string, unknown>[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
 
-  const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Tag; }> = [
-    { id: 'categories', label: 'קטגוריות', icon: Tag },
-    { id: 'classifications', label: 'סיווגים', icon: List },
-    { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
-    { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
-    { id: 'import', label: 'ייבוא כללים', icon: Upload },
-    { id: 'household', label: 'בית', icon: Users }];
+ const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Tag; }> = [
+  { id: 'categories', label: 'קטגוריות', icon: Tag },
+  { id: 'classifications', label: 'סיווגים', icon: List },
+  { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
+  { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
+  { id: 'import-expenses', label: 'ייבוא הוצאות', icon: Upload },
+  { id: 'import-incomes', label: 'ייבוא הכנסות', icon: Upload },
+  { id: 'import', label: 'ייבוא כללים', icon: Upload },
+  { id: 'household', label: 'בית', icon: Users }];
 
   // Sync expense defaults when they load from context
   useEffect(() => {
