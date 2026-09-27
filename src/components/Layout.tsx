@@ -13,13 +13,13 @@ export function Layout({ children }: LayoutProps) {
 
   const navItems = [
   { path: '/', icon: Home, label: 'בית' },
+  { path: '/cash-flow', icon: TrendingDown, label: 'תזרים' },
   { path: '/expenses', icon: List, label: 'הוצאות' },
   { path: '/incomes', icon: Wallet, label: 'הכנסות' },
-  { path: '/cash-flow', icon: TrendingDown, label: 'תזרים' },
-  { path: '/notes', icon: StickyNote, label: 'הערות' },
   { path: '/analytics', icon: Calculator, label: 'חישובים' },
   { path: '/rules', icon: FileText, label: 'כללי הוצאות' },
   { path: '/income-rules', icon: FileText, label: 'כללי הכנסות' },
+  { path: '/notes', icon: StickyNote, label: 'הערות' },
   { path: '/import', icon: Upload, label: 'ייבוא הוצאות' },
   { path: '/import-incomes', icon: Upload, label: 'ייבוא הכנסות' },
   { path: '/settings', icon: Settings, label: 'הגדרות' }];
