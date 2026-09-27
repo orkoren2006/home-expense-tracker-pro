@@ -344,7 +344,7 @@ export function ImportExpensesForm() {
 
   return (
     <>
-      <div data-ev-id="ev_50d651d3fe" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
+<div data-ev-id="ev_50d651d3fe" className="flex flex-col gap-6 pb-24 md:pb-6">
         <div data-ev-id="ev_9753d38406">
           <h2 data-ev-id="ev_faba46b516" className="text-2xl font-bold text-foreground">ייבוא אקסל</h2>
           <p data-ev-id="ev_4ad49b22e4" className="text-muted-foreground">טען הוצאות מחברת האשראי</p>

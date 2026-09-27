@@ -364,7 +364,7 @@ export function ImportIncomesForm() {
 
   return (
     <>
-      <div data-ev-id="ev_b732574c5d" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
+<div data-ev-id="ev_b732574c5d" className="flex flex-col gap-6 pb-24 md:pb-6">
         <div data-ev-id="ev_8a12e006cb">
           <h2 data-ev-id="ev_02cfb032f0" className="text-2xl font-bold text-foreground">ייבוא הכנסות</h2>
           <p data-ev-id="ev_9fbaa55463" className="text-muted-foreground">טען הכנסות מקובץ אקסל</p>
