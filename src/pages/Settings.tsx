@@ -26,7 +26,7 @@ import {
 } from
   '@/types';
 
-type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import';
+type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import'| 'import-expenses' | 'import-incomes';
 
 const TAB_STORAGE_KEY = 'settings_active_tab';
 
