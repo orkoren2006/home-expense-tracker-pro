@@ -581,6 +581,6 @@ export function ImportExpensesForm() {
           </Card>
         }
       </div>
-    </Layout>);
+    </>);
 
 }
