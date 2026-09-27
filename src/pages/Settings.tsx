@@ -26,7 +26,7 @@ import {
 } from
   '@/types';
 
-type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import'| 'import-expenses' | 'import-incomes';
+type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import' | 'import-expenses' | 'import-incomes';
 
 const TAB_STORAGE_KEY = 'settings_active_tab';
 
@@ -134,15 +134,15 @@ export default function Settings() {
   const [importRawData, setImportRawData] = useState<Record<string, unknown>[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
 
- const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Tag; }> = [
-  { id: 'categories', label: 'קטגוריות', icon: Tag },
-  { id: 'classifications', label: 'סיווגים', icon: List },
-  { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
-  { id: 'import-expenses', label: 'ייבוא הוצאות', icon: Upload },
-  { id: 'import-incomes', label: 'ייבוא הכנסות', icon: Upload },
-  { id: 'import', label: 'ייבוא כללים', icon: Upload },
-  { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
-  { id: 'household', label: 'בית', icon: Users }];
+  const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Tag; }> = [
+    { id: 'categories', label: 'קטגוריות', icon: Tag },
+    { id: 'classifications', label: 'סיווגים', icon: List },
+    { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
+    { id: 'import-expenses', label: 'ייבוא הוצאות', icon: Upload },
+    { id: 'import-incomes', label: 'ייבוא הכנסות', icon: Upload },
+    { id: 'import', label: 'ייבוא כללים', icon: Upload },
+    { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
+    { id: 'household', label: 'בית', icon: Users }];
 
   // Sync expense defaults when they load from context
   useEffect(() => {
@@ -812,8 +812,8 @@ export default function Settings() {
               key={id}
               onClick={() => handleTabChange(id)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${activeTab === id ?
-                  'bg-primary text-primary-foreground' :
-                  'bg-card text-muted-foreground hover:text-foreground'}`
+                'bg-primary text-primary-foreground' :
+                'bg-card text-muted-foreground hover:text-foreground'}`
               }>
 
               <Icon className="w-4 h-4" />
@@ -1290,8 +1290,8 @@ export default function Settings() {
                           onClick={() => toggleExpenseColumn(option.key)}
                           disabled={isRequired}
                           className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                              'bg-primary text-primary-foreground border-primary' :
-                              'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                            'bg-primary text-primary-foreground border-primary' :
+                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
 
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
@@ -1315,8 +1315,8 @@ export default function Settings() {
                           onClick={() => toggleIncomeColumn(option.key)}
                           disabled={isRequired}
                           className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                              'bg-primary text-primary-foreground border-primary' :
-                              'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                            'bg-primary text-primary-foreground border-primary' :
+                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
 
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
@@ -1340,8 +1340,8 @@ export default function Settings() {
                           onClick={() => toggleExpenseRulesColumn(option.key)}
                           disabled={isRequired}
                           className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                              'bg-primary text-primary-foreground border-primary' :
-                              'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                            'bg-primary text-primary-foreground border-primary' :
+                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
                           {isRequired && ' (חובה)'}
