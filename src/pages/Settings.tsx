@@ -1406,8 +1406,6 @@ export default function Settings() {
               </label>
             </Card>
 
-            {/* Expense import - Or's addition */}
-          <ImportExpensesForm />
           </div>
         }
 
