@@ -1410,7 +1410,13 @@ export default function Settings() {
 
           </div>
         }
+        {activeTab === 'import-expenses' &&
+          <ImportExpensesForm />
+        }
 
+        {activeTab === 'import-incomes' &&
+          <ImportIncomesForm />
+        }
         {/* Import Preview Modal */}
         {importPreviewOpen &&
           <div data-ev-id="ev_172d6c96ab" className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cancelImportPreview}>
