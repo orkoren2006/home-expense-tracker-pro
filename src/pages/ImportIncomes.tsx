@@ -15,10 +15,10 @@ import type {
   Frequency,
   AmountType,
   IncomePaymentMethod,
-  IncomeSource } from
-'@/types';
-
-export default function ImportIncomes() {
+  IncomeSource
+} from
+  '@/types';
+export function ImportIncomesForm() {
   const { household, refreshData, incomeRules } = useHousehold();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
@@ -57,7 +57,7 @@ export default function ImportIncomes() {
       payment_method: IncomePaymentMethod;
       source: IncomeSource;
     }>>(
-    []);
+      []);
 
   const [manualIncomes, setManualIncomes] = useState<ParsedIncome[]>([]);
   const [currentManualIndex, setCurrentManualIndex] = useState(0);
@@ -68,7 +68,7 @@ export default function ImportIncomes() {
       payment_method: IncomePaymentMethod;
       source: IncomeSource;
     }>>(
-    []);
+      []);
 
   const hasProcessedRef = useRef(false);
 
@@ -363,7 +363,7 @@ export default function ImportIncomes() {
   };
 
   return (
-    <Layout>
+    <>
       <div data-ev-id="ev_b732574c5d" className="md:mr-52 flex flex-col gap-6 pb-24 md:pb-6">
         <div data-ev-id="ev_8a12e006cb">
           <h2 data-ev-id="ev_02cfb032f0" className="text-2xl font-bold text-foreground">ייבוא הכנסות</h2>
@@ -372,16 +372,15 @@ export default function ImportIncomes() {
 
         {/* Upload step */}
         {step === 'upload' &&
-        <Card
-          className={`border-2 border-dashed transition-colors ${
-          isDragging ? 'border-primary bg-primary/5' : 'border-border'}`
-          }
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsDragging(true);
-          }}
-          onDragLeave={() => setIsDragging(false)}
-          onDrop={handleDrop}>
+          <Card
+            className={`border-2 border-dashed transition-colors ${isDragging ? 'border-primary bg-primary/5' : 'border-border'}`
+            }
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDragging(true);
+            }}
+            onDragLeave={() => setIsDragging(false)}
+            onDrop={handleDrop}>
 
             <div data-ev-id="ev_4ce921fd63" className="flex flex-col items-center gap-4 py-8">
               <div data-ev-id="ev_69e8bf8eeb" className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
@@ -392,15 +391,15 @@ export default function ImportIncomes() {
                 <p data-ev-id="ev_173aeca984" className="text-sm text-muted-foreground">או לחץ לבחירה</p>
               </div>
               <input data-ev-id="ev_bdbd1fe71d"
-            type="file"
-            accept=".xlsx,.xls,.csv"
-            onChange={handleFileSelect}
-            className="hidden"
-            id="income-file-input" />
+                type="file"
+                accept=".xlsx,.xls,.csv"
+                onChange={handleFileSelect}
+                className="hidden"
+                id="income-file-input" />
 
               <label data-ev-id="ev_cda5c8be05"
-            htmlFor="income-file-input"
-            className="inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground cursor-pointer">
+                htmlFor="income-file-input"
+                className="inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 border-2 border-primary text-primary hover:bg-primary hover:text-primary-foreground cursor-pointer">
 
                 <FileSpreadsheet className="w-4 h-4" />
                 בחר קובץ
@@ -411,48 +410,48 @@ export default function ImportIncomes() {
 
         {/* Mapping step */}
         {step === 'mapping' &&
-        <Card>
+          <Card>
             <h3 data-ev-id="ev_715f59f4ff" className="text-lg font-semibold text-foreground mb-4">מיפוי עמודות</h3>
             <p data-ev-id="ev_25932adcb2" className="text-muted-foreground mb-6">בחר את העמודות המתאימות:</p>
 
             <div data-ev-id="ev_c4f2792602" className="flex flex-col gap-4">
               <Select
-              label="שם הכנסה"
-              value={mapping.name}
-              onChange={(e) => setMapping((m) => ({ ...m, name: e.target.value }))}
-              options={[
-              { value: '', label: 'בחר עמודה...' },
-              ...columns.map((c) => ({ value: c, label: c }))]
-              } />
+                label="שם הכנסה"
+                value={mapping.name}
+                onChange={(e) => setMapping((m) => ({ ...m, name: e.target.value }))}
+                options={[
+                  { value: '', label: 'בחר עמודה...' },
+                  ...columns.map((c) => ({ value: c, label: c }))]
+                } />
 
 
               <Select
-              label="סכום"
-              value={mapping.amount}
-              onChange={(e) => setMapping((m) => ({ ...m, amount: e.target.value }))}
-              options={[
-              { value: '', label: 'בחר עמודה...' },
-              ...columns.map((c) => ({ value: c, label: c }))]
-              } />
+                label="סכום"
+                value={mapping.amount}
+                onChange={(e) => setMapping((m) => ({ ...m, amount: e.target.value }))}
+                options={[
+                  { value: '', label: 'בחר עמודה...' },
+                  ...columns.map((c) => ({ value: c, label: c }))]
+                } />
 
 
               <Select
-              label="תאריך"
-              value={mapping.date}
-              onChange={(e) => setMapping((m) => ({ ...m, date: e.target.value }))}
-              options={[
-              { value: '', label: 'בחר עמודה...' },
-              ...columns.map((c) => ({ value: c, label: c }))]
-              } />
+                label="תאריך"
+                value={mapping.date}
+                onChange={(e) => setMapping((m) => ({ ...m, date: e.target.value }))}
+                options={[
+                  { value: '', label: 'בחר עמודה...' },
+                  ...columns.map((c) => ({ value: c, label: c }))]
+                } />
 
               <Select
-              label="הערות - אופציונלי"
-              value={mapping.notes || ''}
-              onChange={(e) => setMapping((m) => ({ ...m, notes: e.target.value }))}
-              options={[
-              { value: '', label: 'לא נבחר' },
-              ...columns.map((c) => ({ value: c, label: c }))]
-              } />
+                label="הערות - אופציונלי"
+                value={mapping.notes || ''}
+                onChange={(e) => setMapping((m) => ({ ...m, notes: e.target.value }))}
+                options={[
+                  { value: '', label: 'לא נבחר' },
+                  ...columns.map((c) => ({ value: c, label: c }))]
+                } />
 
               <div data-ev-id="ev_fd68f24a67" className="flex gap-3 mt-4">
                 <Button onClick={handleMappingSubmit}>המשך</Button>
@@ -466,7 +465,7 @@ export default function ImportIncomes() {
 
         {/* Month selection step */}
         {step === 'month' &&
-        <Card>
+          <Card>
             <h3 data-ev-id="ev_828df14fa5" className="text-lg font-semibold text-foreground mb-4">בחירת חודש</h3>
             <p data-ev-id="ev_4b6a46ddcc" className="text-muted-foreground mb-6">
               לאיזה חודש מיועדות ההכנסות בקובץ זה? ({incomes.length} הכנסות)
@@ -474,38 +473,38 @@ export default function ImportIncomes() {
 
             <div data-ev-id="ev_398df869e7" className="flex gap-4 items-end">
               <Select
-              label="חודש"
-              value={String(selectedMonth)}
-              onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
-              options={[
-              { value: '1', label: 'ינואר' },
-              { value: '2', label: 'פברואר' },
-              { value: '3', label: 'מרץ' },
-              { value: '4', label: 'אפריל' },
-              { value: '5', label: 'מאי' },
-              { value: '6', label: 'יוני' },
-              { value: '7', label: 'יולי' },
-              { value: '8', label: 'אוגוסט' },
-              { value: '9', label: 'ספטמבר' },
-              { value: '10', label: 'אוקטובר' },
-              { value: '11', label: 'נובמבר' },
-              { value: '12', label: 'דצמבר' }]
-              } />
+                label="חודש"
+                value={String(selectedMonth)}
+                onChange={(e) => setSelectedMonth(parseInt(e.target.value))}
+                options={[
+                  { value: '1', label: 'ינואר' },
+                  { value: '2', label: 'פברואר' },
+                  { value: '3', label: 'מרץ' },
+                  { value: '4', label: 'אפריל' },
+                  { value: '5', label: 'מאי' },
+                  { value: '6', label: 'יוני' },
+                  { value: '7', label: 'יולי' },
+                  { value: '8', label: 'אוגוסט' },
+                  { value: '9', label: 'ספטמבר' },
+                  { value: '10', label: 'אוקטובר' },
+                  { value: '11', label: 'נובמבר' },
+                  { value: '12', label: 'דצמבר' }]
+                } />
 
 
               <Select
-              label="שנה"
-              value={String(selectedYear)}
-              onChange={(e) => setSelectedYear(parseInt(e.target.value))}
-              options={(() => {
-                const currentYear = new Date().getFullYear();
-                return [
-                { value: String(currentYear - 1), label: String(currentYear - 1) },
-                { value: String(currentYear), label: String(currentYear) },
-                { value: String(currentYear + 1), label: String(currentYear + 1) },
-                { value: String(currentYear + 2), label: String(currentYear + 2) }];
+                label="שנה"
+                value={String(selectedYear)}
+                onChange={(e) => setSelectedYear(parseInt(e.target.value))}
+                options={(() => {
+                  const currentYear = new Date().getFullYear();
+                  return [
+                    { value: String(currentYear - 1), label: String(currentYear - 1) },
+                    { value: String(currentYear), label: String(currentYear) },
+                    { value: String(currentYear + 1), label: String(currentYear + 1) },
+                    { value: String(currentYear + 2), label: String(currentYear + 2) }];
 
-              })()} />
+                })()} />
 
             </div>
 
@@ -520,7 +519,7 @@ export default function ImportIncomes() {
 
         {/* Classification step */}
         {step === 'classify' && manualIncomes[currentManualIndex] &&
-        <>
+          <>
             <Card className="bg-muted/50">
               <div data-ev-id="ev_b19e017d44" className="flex items-center justify-between">
                 <div data-ev-id="ev_17a08488fb" className="flex items-center gap-3">
@@ -528,10 +527,10 @@ export default function ImportIncomes() {
                     סיווג ידני: {currentManualIndex + 1} / {manualIncomes.length}
                   </span>
                   {autoClassifiedIncomes.length > 0 &&
-                <span data-ev-id="ev_7316c9f250" className="text-green-600 text-sm">
+                    <span data-ev-id="ev_7316c9f250" className="text-green-600 text-sm">
                       ({autoClassifiedIncomes.length} סווגו אוטומטית)
                     </span>
-                }
+                  }
                 </div>
                 <Button variant="ghost" size="sm" onClick={resetImport}>
                   <X className="w-4 h-4" />
@@ -541,17 +540,17 @@ export default function ImportIncomes() {
             </Card>
 
             <IncomeClassificationModal
-            income={manualIncomes[currentManualIndex]}
-            onSave={handleClassify}
-            onSkip={handleSkip}
-            onClose={resetImport} />
+              income={manualIncomes[currentManualIndex]}
+              onSave={handleClassify}
+              onSkip={handleSkip}
+              onClose={resetImport} />
 
           </>
         }
 
         {/* Done step */}
         {step === 'done' &&
-        <Card className="text-center py-8">
+          <Card className="text-center py-8">
             <div data-ev-id="ev_7ea668dc9f" className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mx-auto mb-4">
               <Check className="w-8 h-8 text-green-600" />
             </div>
@@ -560,22 +559,22 @@ export default function ImportIncomes() {
               {autoClassifiedIncomes.length + manualClassifiedIncomes.length} הכנסות נוספו בהצלחה
             </p>
             {autoClassifiedIncomes.length > 0 &&
-          <p data-ev-id="ev_54df28e645" className="text-sm text-green-600 mb-2">
+              <p data-ev-id="ev_54df28e645" className="text-sm text-green-600 mb-2">
                 ✓ {autoClassifiedIncomes.length} סווגו אוטומטית
               </p>
-          }
+            }
             {manualClassifiedIncomes.length > 0 &&
-          <p data-ev-id="ev_64146f0af1" className="text-sm text-blue-600 mb-4">
+              <p data-ev-id="ev_64146f0af1" className="text-sm text-blue-600 mb-4">
                 ✓ {manualClassifiedIncomes.length} סווגו ידנית
               </p>
-          }
+            }
             <Button onClick={resetImport}>ייבוא נוסף</Button>
           </Card>
         }
 
         {/* Loading */}
         {loading &&
-        <Card className="text-center py-8">
+          <Card className="text-center py-8">
             <div data-ev-id="ev_87b2bf1e8c" className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
             <p data-ev-id="ev_0ba6117029" className="text-muted-foreground">מעבד...</p>
           </Card>
@@ -583,7 +582,7 @@ export default function ImportIncomes() {
 
         {/* Error */}
         {error &&
-        <Card className="bg-red-50 border border-red-200">
+          <Card className="bg-red-50 border border-red-200">
             <div data-ev-id="ev_e9980daf5b" className="flex items-center gap-3">
               <AlertCircle className="w-6 h-6 text-red-600 flex-shrink-0" />
               <p data-ev-id="ev_4f39f6fd4e" className="text-red-800">{error}</p>
