@@ -1404,7 +1404,7 @@ export default function Settings() {
               </label>
             </Card>
 
-            {/* Expense import */}
+            {/* Expense import - Or's addition */}
             <Card>
               <h3 data-ev-id="ev_707ba210af" className="font-semibold text-foreground mb-4">ייבוא הוצאות</h3>
               <p data-ev-id="ev_c425ae97cd" className="text-muted-foreground mb-4">
