@@ -428,7 +428,7 @@ export default function CashFlow() {
             map((card) =>
             <div data-ev-id="ev_e68f13e946" key={card.id} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                     <div data-ev-id="ev_507a977187" className="flex items-center gap-2">
-                      <span data-ev-id="ev_36f1d1cfd7" className="text-foreground">{card.name}</span>
+                      <span data-ev-id="ev_36f1d1cfd7" className="text-foreground">{card.name}2</span>
                       {card.last_four_digits &&
                 <span data-ev-id="ev_2861613bfe" className="text-xs text-muted-foreground">({card.last_four_digits})</span>
                 }
