@@ -29,7 +29,7 @@ export function Layout({ children }: LayoutProps) {
       {/* Top bar with hamburger menu on mobile */}
       {household &&
       <div data-ev-id="ev_aa487c4dcb" className="backdrop-blur-sm border-b bg-card/80 px-4 py-2 border-border flex items-center justify-between">
-          <span data-ev-id="ev_da6a2f87e5" className="text-primary font-bold text-base">ניהול תקציב - משפחת קורן</span>
+          <span data-ev-id="ev_da6a2f87e5" className="text-primary font-bold text-base md:mr-48">ניהול תקציב - משפחת קורן</span>
           <button data-ev-id="ev_8915e55f51"
         onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
         className="md:hidden p-2 rounded-lg hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"

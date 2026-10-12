@@ -359,8 +359,7 @@ export default function CashFlow() {
               {bankBalance ? formatCurrency(bankBalance.balance) : '—'}
             </p>
             {bankBalance &&
-            <div data-ev-id="ev_45232bfb72" className="text-xs text-muted-foreground mt-1 flex flex-col gap-0.5">
-                <span data-ev-id="ev_f4e0d975bc">נכון ל-{formatDate(bankBalance.as_of_date)}</span>
+            <div data-ev-id="ev_45232bfb72" className="text-xs text-muted-foreground mt-1">
                 <span data-ev-id="ev_e73d6b28fb">עודכן: {formatDate(bankBalance.updated_at)}</span>
               </div>
             }
@@ -422,14 +421,6 @@ export default function CashFlow() {
                 </div>
                 <h3 data-ev-id="ev_9b01d64d9a" className="font-semibold text-foreground">פירוט חיובי אשראי לפי כרטיס</h3>
               </div>
-              {(() => {
-              const latestUpdate = cardsWithDebit.
-              filter((c) => c.next_debit_updated_at).
-              sort((a, b) => new Date(b.next_debit_updated_at!).getTime() - new Date(a.next_debit_updated_at!).getTime())[0];
-              return latestUpdate?.next_debit_updated_at ?
-              <span data-ev-id="ev_6cdb24a94b" className="text-xs text-muted-foreground">עודכן: {formatDate(latestUpdate.next_debit_updated_at)}</span> :
-              null;
-            })()}
             </div>
             <div data-ev-id="ev_6a89ab1e6a" className="flex flex-col gap-2">
               {cardsWithDebit.
@@ -442,9 +433,14 @@ export default function CashFlow() {
                 <span data-ev-id="ev_2861613bfe" className="text-xs text-muted-foreground">({card.last_four_digits})</span>
                 }
                     </div>
-                    <span data-ev-id="ev_ee9b9147ff" className="font-medium text-red-600 font-mono">
-                      {formatCurrencyWithCents(card.next_total_debit || 0)}
-                    </span>
+                    <div data-ev-id="ev_f9f678b87f" className="flex items-center gap-2">
+                      {card.next_debit_updated_at &&
+                <span data-ev-id="ev_2e365a81a2" className="text-xs text-muted-foreground">עודכן: {formatDate(card.next_debit_updated_at)}</span>
+                }
+                      <span data-ev-id="ev_ee9b9147ff" className="font-medium text-red-600 font-mono">
+                        {formatCurrencyWithCents(card.next_total_debit || 0)}
+                      </span>
+                    </div>
                   </div>
             )}
               <div data-ev-id="ev_015eae7c65" className="flex items-center justify-between py-2 pt-3 border-t-2 border-border font-bold">
