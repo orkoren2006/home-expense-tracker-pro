@@ -434,12 +434,13 @@ export default function CashFlow() {
                 }
                     </div>
                     <div data-ev-id="ev_f9f678b87f" className="flex-column items-center gap-2">
+                    <div data-ev-id="ev_ee9b9147ff" className="font-medium text-red-600 font-mono">
+                        {formatCurrencyWithCents(card.next_total_debit || 0)}
+                      </div>
                       {card.next_debit_updated_at &&
                 <div data-ev-id="ev_2e365a81a2" className="text-xs text-muted-foreground">עודכן: {formatDate(card.next_debit_updated_at)}</div>
                 }
-                      <div data-ev-id="ev_ee9b9147ff" className="font-medium text-red-600 font-mono">
-                        {formatCurrencyWithCents(card.next_total_debit || 0)}
-                      </div>
+                      
                     </div>
                   </div>
             )}
