@@ -431,6 +431,9 @@ export default function CashFlow() {
                       <span data-ev-id="ev_36f1d1cfd7" className="text-foreground">{card.name}</span>
                       {card.last_four_digits &&
                 <span data-ev-id="ev_2861613bfe" className="text-xs text-muted-foreground">({card.last_four_digits})</span>
+                    {card.next_debit_updated_at &&
+                <span data-ev-id="ev_2e365a81a2" className="text-xs text-muted-foreground">עודכן: {formatDate(card.next_debit_updated_at)}</span>
+                }
                 }
                     </div>
                     <div data-ev-id="ev_f9f678b87f" className="flex items-center gap-2">
