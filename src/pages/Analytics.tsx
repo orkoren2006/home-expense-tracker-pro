@@ -106,25 +106,57 @@ export default function Analytics() {
     const loadData = async () => {
       setLoading(true);
 
-      const [expensesRes, incomesRes] = await Promise.all([
-      supabase.
-      from('expenses').
-      select('*').
-      eq('household_id', household.id).
-      gte('billing_month', effectiveRange.start).
-      lte('billing_month', effectiveRange.end).
-      order('billing_month'),
-      supabase.
-      from('incomes').
-      select('*').
-      eq('household_id', household.id).
-      gte('billing_month', effectiveRange.start).
-      lte('billing_month', effectiveRange.end).
-      order('billing_month')]
-      );
+      // Paginated fetch - Supabase limits to 1000 rows silently
+      const PAGE_SIZE = 1000;
 
-      setExpenses((expensesRes.data ?? []) as Expense[]);
-      setIncomes((incomesRes.data ?? []) as Income[]);
+      // Fetch all expenses with pagination
+      let allExpenses: Expense[] = [];
+      let expenseOffset = 0;
+      let keepFetchingExpenses = true;
+      while (keepFetchingExpenses) {
+        const { data: batch } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('household_id', household.id)
+          .gte('billing_month', effectiveRange.start)
+          .lte('billing_month', effectiveRange.end)
+          .order('billing_month')
+          .order('id')
+          .range(expenseOffset, expenseOffset + PAGE_SIZE - 1);
+        if (batch && batch.length > 0) {
+          allExpenses = [...allExpenses, ...(batch as Expense[])];
+          expenseOffset += PAGE_SIZE;
+          if (batch.length < PAGE_SIZE) keepFetchingExpenses = false;
+        } else {
+          keepFetchingExpenses = false;
+        }
+      }
+
+      // Fetch all incomes with pagination
+      let allIncomes: Income[] = [];
+      let incomeOffset = 0;
+      let keepFetchingIncomes = true;
+      while (keepFetchingIncomes) {
+        const { data: batch } = await supabase
+          .from('incomes')
+          .select('*')
+          .eq('household_id', household.id)
+          .gte('billing_month', effectiveRange.start)
+          .lte('billing_month', effectiveRange.end)
+          .order('billing_month')
+          .order('id')
+          .range(incomeOffset, incomeOffset + PAGE_SIZE - 1);
+        if (batch && batch.length > 0) {
+          allIncomes = [...allIncomes, ...(batch as Income[])];
+          incomeOffset += PAGE_SIZE;
+          if (batch.length < PAGE_SIZE) keepFetchingIncomes = false;
+        } else {
+          keepFetchingIncomes = false;
+        }
+      }
+
+      setExpenses(allExpenses);
+      setIncomes(allIncomes);
       setLoading(false);
     };
 
