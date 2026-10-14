@@ -419,7 +419,7 @@ export default function CashFlow() {
                 <div data-ev-id="ev_76f392cdd7" className="p-2 bg-red-500/20 rounded-lg">
                   <CreditCard className="w-5 h-5 text-red-600" />
                 </div>
-                <h3 data-ev-id="ev_9b01d64d9a" className="font-semibold text-foreground">פירוט חיובי אשראי לפי כרטיס</h3>
+                <h3 data-ev-id="ev_9b01d64d9a" className="font-semibold text-foreground">פירוט חיובי אשראי לפי נתוני חיוב קרוב מאתרי האשראי</h3>
               </div>
             </div>
             <div data-ev-id="ev_6a89ab1e6a" className="flex flex-col gap-2">
