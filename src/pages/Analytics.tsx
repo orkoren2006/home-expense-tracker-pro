@@ -32,6 +32,10 @@ export default function Analytics() {
   // Data
   const [expenses, setExpenses] = useState<Expense[]>([]);
   const [incomes, setIncomes] = useState<Income[]>([]);
+  
+  // 12-month historical data for stats (excluding current month)
+  const [historicalExpenses, setHistoricalExpenses] = useState<Expense[]>([]);
+  const [historicalIncomes, setHistoricalIncomes] = useState<Income[]>([]);
 
   // Month range
   const [rangeStart, setRangeStart] = useState(() => {
@@ -163,6 +167,83 @@ export default function Analytics() {
     loadData();
   }, [household, effectiveRange]);
 
+  // Load 12-month historical data for stats (last 12 completed months, excluding current month)
+  useEffect(() => {
+    if (!supabase || !household) return;
+    
+    // Only load when not in multi-month range mode
+    const isMultiMonthRange = isRangeMode && rangeStart !== rangeEnd;
+    if (isMultiMonthRange) {
+      // In multi-month range mode, historical data is not needed
+      setHistoricalExpenses([]);
+      setHistoricalIncomes([]);
+      return;
+    }
+
+    const loadHistoricalData = async () => {
+      const now = new Date();
+      // End is the month before current month
+      const endMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endStr = `${endMonth.getFullYear()}-${String(endMonth.getMonth() + 1).padStart(2, '0')}`;
+      // Start is 12 months before current month
+      const startMonth = new Date(now.getFullYear(), now.getMonth() - 12, 1);
+      const startStr = `${startMonth.getFullYear()}-${String(startMonth.getMonth() + 1).padStart(2, '0')}`;
+
+      const PAGE_SIZE = 1000;
+
+      // Fetch all expenses with pagination
+      let allExpenses: Expense[] = [];
+      let expenseOffset = 0;
+      let keepFetchingExpenses = true;
+      while (keepFetchingExpenses) {
+        const { data: batch } = await supabase
+          .from('expenses')
+          .select('*')
+          .eq('household_id', household.id)
+          .gte('billing_month', startStr)
+          .lte('billing_month', endStr)
+          .order('billing_month')
+          .order('id')
+          .range(expenseOffset, expenseOffset + PAGE_SIZE - 1);
+        if (batch && batch.length > 0) {
+          allExpenses = [...allExpenses, ...(batch as Expense[])];
+          expenseOffset += PAGE_SIZE;
+          if (batch.length < PAGE_SIZE) keepFetchingExpenses = false;
+        } else {
+          keepFetchingExpenses = false;
+        }
+      }
+
+      // Fetch all incomes with pagination
+      let allIncomes: Income[] = [];
+      let incomeOffset = 0;
+      let keepFetchingIncomes = true;
+      while (keepFetchingIncomes) {
+        const { data: batch } = await supabase
+          .from('incomes')
+          .select('*')
+          .eq('household_id', household.id)
+          .gte('billing_month', startStr)
+          .lte('billing_month', endStr)
+          .order('billing_month')
+          .order('id')
+          .range(incomeOffset, incomeOffset + PAGE_SIZE - 1);
+        if (batch && batch.length > 0) {
+          allIncomes = [...allIncomes, ...(batch as Income[])];
+          incomeOffset += PAGE_SIZE;
+          if (batch.length < PAGE_SIZE) keepFetchingIncomes = false;
+        } else {
+          keepFetchingIncomes = false;
+        }
+      }
+
+      setHistoricalExpenses(allExpenses);
+      setHistoricalIncomes(allIncomes);
+    };
+
+    loadHistoricalData();
+  }, [household, isRangeMode, rangeStart, rangeEnd]);
+
   // Navigation functions
   const goToPrevMonth = () => {
     setSelectedMonth((prev) => new Date(prev.getFullYear(), prev.getMonth() - 1, 1));
@@ -270,6 +351,75 @@ export default function Analytics() {
       return true;
     });
   }, [incomes, filters]);
+
+  // Filtered historical data (same filters apply)
+  const filteredHistoricalExpenses = useMemo(() => {
+    return historicalExpenses.filter((e) => {
+      if (filters.categories.length > 0 && !filters.categories.includes(e.category_id ?? '')) {
+        return false;
+      }
+      if (filters.expenseTypes.length > 0 && !filters.expenseTypes.includes(e.expense_type)) {
+        return false;
+      }
+      if (filters.paymentMethods.length > 0 && !filters.paymentMethods.includes(e.payment_method)) {
+        return false;
+      }
+      return true;
+    });
+  }, [historicalExpenses, filters]);
+
+  const filteredHistoricalIncomes = useMemo(() => {
+    return historicalIncomes.filter((i) => {
+      if (filters.incomeSources.length > 0 && !filters.incomeSources.includes(i.source)) {
+        return false;
+      }
+      return true;
+    });
+  }, [historicalIncomes, filters]);
+
+  // Calculate historical stats (for the 3 boxes in single month mode)
+  const historicalExpenseStats = useMemo(() => {
+    const total = filteredHistoricalExpenses.reduce((sum, e) => sum + Number(e.amount), 0);
+    
+    // Group by month
+    const byMonth: Record<string, number> = {};
+    filteredHistoricalExpenses.forEach((e) => {
+      byMonth[e.billing_month ?? ''] = (byMonth[e.billing_month ?? ''] || 0) + Number(e.amount);
+    });
+    const monthTotals = Object.entries(byMonth).map(([month, amount]) => ({ month, amount }));
+    const sortedMonths = [...monthTotals].sort((a, b) => b.amount - a.amount);
+    const highestMonth = sortedMonths[0] || null;
+    const lowestMonth = sortedMonths[sortedMonths.length - 1] || null;
+    const monthCount = Object.keys(byMonth).length;
+    const avgMonthly = monthCount > 0 ? total / monthCount : 0;
+
+    return { avgMonthly, highestMonth, lowestMonth, monthCount };
+  }, [filteredHistoricalExpenses]);
+
+  const historicalIncomeStats = useMemo(() => {
+    const total = filteredHistoricalIncomes.reduce((sum, i) => sum + Number(i.amount), 0);
+    
+    // Group by month
+    const byMonth: Record<string, number> = {};
+    filteredHistoricalIncomes.forEach((i) => {
+      byMonth[i.billing_month ?? ''] = (byMonth[i.billing_month ?? ''] || 0) + Number(i.amount);
+    });
+    const monthTotals = Object.entries(byMonth).map(([month, amount]) => ({ month, amount }));
+    const sortedMonths = [...monthTotals].sort((a, b) => b.amount - a.amount);
+    const highestMonth = sortedMonths[0] || null;
+    const lowestMonth = sortedMonths[sortedMonths.length - 1] || null;
+    const monthCount = Object.keys(byMonth).length;
+    const avgMonthly = monthCount > 0 ? total / monthCount : 0;
+
+    return { avgMonthly, highestMonth, lowestMonth, monthCount };
+  }, [filteredHistoricalIncomes]);
+
+  // Determine if we should use historical stats for the 3 boxes
+  const useHistoricalStats = useMemo(() => {
+    // Use historical stats when not in multi-month range mode
+    const isMultiMonthRange = isRangeMode && rangeStart !== rangeEnd;
+    return !isMultiMonthRange;
+  }, [isRangeMode, rangeStart, rangeEnd]);
 
   // Calculate stats
   const expenseStats = useMemo(() => {
@@ -409,6 +559,37 @@ export default function Analytics() {
     });
     return sorted;
   }, [incomeStats.sourceBreakdown, incomeSortField, incomeSortDir]);
+
+  // Effective stats for the 3 boxes (use historical when in single month mode)
+  const effectiveExpenseMonthlyStats = useMemo(() => {
+    if (useHistoricalStats) {
+      return {
+        avgMonthly: historicalExpenseStats.avgMonthly,
+        highestMonth: historicalExpenseStats.highestMonth,
+        lowestMonth: historicalExpenseStats.lowestMonth
+      };
+    }
+    return {
+      avgMonthly: expenseStats.avgMonthly,
+      highestMonth: expenseStats.highestMonth,
+      lowestMonth: expenseStats.lowestMonth
+    };
+  }, [useHistoricalStats, historicalExpenseStats, expenseStats]);
+
+  const effectiveIncomeMonthlyStats = useMemo(() => {
+    if (useHistoricalStats) {
+      return {
+        avgMonthly: historicalIncomeStats.avgMonthly,
+        highestMonth: historicalIncomeStats.highestMonth,
+        lowestMonth: historicalIncomeStats.lowestMonth
+      };
+    }
+    return {
+      avgMonthly: incomeStats.avgMonthly,
+      highestMonth: incomeStats.highestMonth,
+      lowestMonth: incomeStats.lowestMonth
+    };
+  }, [useHistoricalStats, historicalIncomeStats, incomeStats]);
 
   // Sort header component
   const SortHeader = ({ field, label, sortField, sortDir, onSort
@@ -754,17 +935,17 @@ export default function Analytics() {
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_ef66fc2a4b" className="text-xs text-muted-foreground">ממוצע חודשי</span>
                     <p data-ev-id="ev_6a1fade944" className="text-xl font-bold text-foreground">
-                      ₪{Math.round(expenseStats.avgMonthly).toLocaleString()}
+                      ₪{Math.round(effectiveExpenseMonthlyStats.avgMonthly).toLocaleString()}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_a7d7c01a0c" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
                     <p data-ev-id="ev_ff140945c1" className="text-lg font-bold text-red-600">
-                      {expenseStats.highestMonth ?
+                      {effectiveExpenseMonthlyStats.highestMonth ?
                   <>
-                          ₪{expenseStats.highestMonth.amount.toLocaleString()}
+                          ₪{effectiveExpenseMonthlyStats.highestMonth.amount.toLocaleString()}
                           <span data-ev-id="ev_908f928a03" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthHebrew(expenseStats.highestMonth.month)}
+                            {formatMonthHebrew(effectiveExpenseMonthlyStats.highestMonth.month)}
                           </span>
                         </> :
                   '-'}
@@ -773,11 +954,11 @@ export default function Analytics() {
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_28a5addda4" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
                     <p data-ev-id="ev_b626b72326" className="text-lg font-bold text-green-600">
-                      {expenseStats.lowestMonth ?
+                      {effectiveExpenseMonthlyStats.lowestMonth ?
                   <>
-                          ₪{expenseStats.lowestMonth.amount.toLocaleString()}
+                          ₪{effectiveExpenseMonthlyStats.lowestMonth.amount.toLocaleString()}
                           <span data-ev-id="ev_9f3118eebb" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthHebrew(expenseStats.lowestMonth.month)}
+                            {formatMonthHebrew(effectiveExpenseMonthlyStats.lowestMonth.month)}
                           </span>
                         </> :
                   '-'}
@@ -839,17 +1020,17 @@ export default function Analytics() {
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_bb1b41454d" className="text-xs text-muted-foreground">ממוצע חודשי</span>
                     <p data-ev-id="ev_0ee37cbdd3" className="text-xl font-bold text-foreground">
-                      ₪{Math.round(incomeStats.avgMonthly).toLocaleString()}
+                      ₪{Math.round(effectiveIncomeMonthlyStats.avgMonthly).toLocaleString()}
                     </p>
                   </Card>
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_9f94778b7f" className="text-xs text-muted-foreground">החודש הגבוה ביותר</span>
                     <p data-ev-id="ev_fa032a0d3c" className="text-lg font-bold text-green-600">
-                      {incomeStats.highestMonth ?
+                      {effectiveIncomeMonthlyStats.highestMonth ?
                   <>
-                          ₪{incomeStats.highestMonth.amount.toLocaleString()}
+                          ₪{effectiveIncomeMonthlyStats.highestMonth.amount.toLocaleString()}
                           <span data-ev-id="ev_ffcd99d27e" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthHebrew(incomeStats.highestMonth.month)}
+                            {formatMonthHebrew(effectiveIncomeMonthlyStats.highestMonth.month)}
                           </span>
                         </> :
                   '-'}
@@ -858,11 +1039,11 @@ export default function Analytics() {
                   <Card className="flex flex-col gap-1">
                     <span data-ev-id="ev_399c3af7a5" className="text-xs text-muted-foreground">החודש הנמוך ביותר</span>
                     <p data-ev-id="ev_45f438f1a1" className="text-lg font-bold text-red-600">
-                      {incomeStats.lowestMonth ?
+                      {effectiveIncomeMonthlyStats.lowestMonth ?
                   <>
-                          ₪{incomeStats.lowestMonth.amount.toLocaleString()}
+                          ₪{effectiveIncomeMonthlyStats.lowestMonth.amount.toLocaleString()}
                           <span data-ev-id="ev_ad9557a8a3" className="text-xs text-muted-foreground font-normal block">
-                            {formatMonthHebrew(incomeStats.lowestMonth.month)}
+                            {formatMonthHebrew(effectiveIncomeMonthlyStats.lowestMonth.month)}
                           </span>
                         </> :
                   '-'}
