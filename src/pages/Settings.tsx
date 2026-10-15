@@ -22,9 +22,10 @@ import {
   INCOME_PAYMENT_METHOD_LABELS,
   EXPENSE_COLUMN_OPTIONS,
   INCOME_COLUMN_OPTIONS,
-  EXPENSE_RULES_COLUMN_OPTIONS
-} from
-  '@/types';
+  EXPENSE_RULES_COLUMN_OPTIONS,
+  INCOME_RULES_COLUMN_OPTIONS } from
+
+'@/types';
 
 type SettingsTab = 'categories' | 'cards' | 'defaults' | 'classifications' | 'household' | 'import' | 'import-expenses' | 'import-incomes';
 
@@ -106,6 +107,9 @@ export default function Settings() {
   const [expenseRulesColumns, setExpenseRulesColumns] = useState<string[]>(
     displaySettings?.expense_rules_columns || ['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes']
   );
+  const [incomeRulesColumns, setIncomeRulesColumns] = useState<string[]>(
+    displaySettings?.income_rules_columns || ['income_name', 'source', 'frequency', 'payment_method', 'amount_type']
+  );
 
   // Import rules preview state
   type ImportRulesType = 'expense' | 'income';
@@ -134,15 +138,15 @@ export default function Settings() {
   const [importRawData, setImportRawData] = useState<Record<string, unknown>[]>([]);
   const [importFile, setImportFile] = useState<File | null>(null);
 
-  const tabs: Array<{ id: SettingsTab; label: string; icon: typeof Tag; }> = [
-    { id: 'categories', label: 'קטגוריות', icon: Tag },
-    { id: 'classifications', label: 'סיווגים', icon: List },
-    { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
-    { id: 'import-expenses', label: 'ייבוא הוצאות', icon: Upload },
-    { id: 'import-incomes', label: 'ייבוא הכנסות', icon: Upload },
-    { id: 'import', label: 'ייבוא כללים', icon: Upload },
-    { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
-    { id: 'household', label: 'בית', icon: Users }];
+  const tabs: Array<{id: SettingsTab;label: string;icon: typeof Tag;}> = [
+  { id: 'categories', label: 'קטגוריות', icon: Tag },
+  { id: 'classifications', label: 'סיווגים', icon: List },
+  { id: 'defaults', label: 'ברירות מחדל', icon: Sliders },
+  { id: 'import-expenses', label: 'ייבוא הוצאות', icon: Upload },
+  { id: 'import-incomes', label: 'ייבוא הכנסות', icon: Upload },
+  { id: 'import', label: 'ייבוא כללים', icon: Upload },
+  { id: 'cards', label: 'כרטיסי אשראי', icon: CreditCard },
+  { id: 'household', label: 'בית', icon: Users }];
 
   // Sync expense defaults when they load from context
   useEffect(() => {
@@ -174,6 +178,9 @@ export default function Settings() {
       if (displaySettings.expense_rules_columns) {
         setExpenseRulesColumns(displaySettings.expense_rules_columns);
       }
+      if (displaySettings.income_rules_columns) {
+        setIncomeRulesColumns(displaySettings.income_rules_columns);
+      }
     }
   }, [displaySettings]);
 
@@ -182,9 +189,9 @@ export default function Settings() {
     const loadOptions = async () => {
       if (!supabase || !household) return;
       const { data } = await supabase.
-        from('classification_options').
-        select('*').
-        eq('household_id', household.id);
+      from('classification_options').
+      select('*').
+      eq('household_id', household.id);
       setClassificationOptions((data ?? []) as ClassificationOption[]);
     };
     loadOptions();
@@ -204,9 +211,9 @@ export default function Settings() {
 
     // Reload options
     const { data } = await supabase.
-      from('classification_options').
-      select('*').
-      eq('household_id', household.id);
+    from('classification_options').
+    select('*').
+    eq('household_id', household.id);
     setClassificationOptions((data ?? []) as ClassificationOption[]);
 
     setNewOptionValue('');
@@ -244,7 +251,7 @@ export default function Settings() {
     await refreshData();
   };
 
-  const startEditingCategory = (cat: { id: string; name: string; }) => {
+  const startEditingCategory = (cat: {id: string;name: string;}) => {
     setEditingCategoryId(cat.id);
     setEditingCategoryName(cat.name);
   };
@@ -258,9 +265,9 @@ export default function Settings() {
     if (!supabase || !editingCategoryId || !editingCategoryName.trim()) return;
 
     await supabase.
-      from('categories').
-      update({ name: editingCategoryName.trim() }).
-      eq('id', editingCategoryId);
+    from('categories').
+    update({ name: editingCategoryName.trim() }).
+    eq('id', editingCategoryId);
 
     setEditingCategoryId(null);
     setEditingCategoryName('');
@@ -341,7 +348,8 @@ export default function Settings() {
         household_id: household.id,
         expense_columns: expenseColumns,
         income_columns: incomeColumns,
-        expense_rules_columns: expenseRulesColumns
+        expense_rules_columns: expenseRulesColumns,
+        income_rules_columns: incomeRulesColumns
       },
       { onConflict: 'household_id' }
     );
@@ -355,9 +363,9 @@ export default function Settings() {
     if (option && 'required' in option && option.required) return; // Can't toggle required columns
 
     setExpenseColumns((prev) =>
-      prev.includes(key) ?
-        prev.filter((k) => k !== key) :
-        [...prev, key]
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
     );
   };
 
@@ -366,9 +374,9 @@ export default function Settings() {
     if (option && 'required' in option && option.required) return; // Can't toggle required columns
 
     setIncomeColumns((prev) =>
-      prev.includes(key) ?
-        prev.filter((k) => k !== key) :
-        [...prev, key]
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
     );
   };
 
@@ -377,9 +385,20 @@ export default function Settings() {
     if (option && 'required' in option && option.required) return;
 
     setExpenseRulesColumns((prev) =>
-      prev.includes(key) ?
-        prev.filter((k) => k !== key) :
-        [...prev, key]
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
+    );
+  };
+
+  const toggleIncomeRulesColumn = (key: string) => {
+    const option = INCOME_RULES_COLUMN_OPTIONS.find((o) => o.key === key);
+    if (option && 'required' in option && option.required) return;
+
+    setIncomeRulesColumns((prev) =>
+    prev.includes(key) ?
+    prev.filter((k) => k !== key) :
+    [...prev, key]
     );
   };
 
@@ -534,9 +553,9 @@ export default function Settings() {
 
     // Check which rules already exist
     const { data: existingRules } = await supabase.
-      from('expense_rules').
-      select('expense_name').
-      eq('household_id', household.id);
+    from('expense_rules').
+    select('expense_name').
+    eq('household_id', household.id);
     const existingNames = new Set((existingRules || []).map((r) => r.expense_name.toLowerCase()));
 
     // Build reverse label maps (Hebrew -> English value)
@@ -556,10 +575,10 @@ export default function Settings() {
     // Add custom classification options to reverse maps
     for (const opt of classificationOptions) {
       const map =
-        opt.option_type === 'frequency' ? frequencyReverseMap :
-          opt.option_type === 'amount_type' ? amountTypeReverseMap :
-            opt.option_type === 'expense_type' ? expenseTypeReverseMap :
-              paymentMethodReverseMap;
+      opt.option_type === 'frequency' ? frequencyReverseMap :
+      opt.option_type === 'amount_type' ? amountTypeReverseMap :
+      opt.option_type === 'expense_type' ? expenseTypeReverseMap :
+      paymentMethodReverseMap;
       map.set(opt.label.toLowerCase(), opt.value);
     }
 
@@ -568,7 +587,7 @@ export default function Settings() {
 
     // Collect items that need to be created
     const newCategories = new Set<string>();
-    const newClassifications: Array<{ type: string; label: string; }> = [];
+    const newClassifications: Array<{type: string;label: string;}> = [];
 
     for (const rule of rules) {
       if (rule.category_name && !categoryMap.has(rule.category_name.toLowerCase())) {
@@ -601,9 +620,9 @@ export default function Settings() {
       }));
 
       const { data: createdCats, error: catError } = await supabase.
-        from('categories').
-        insert(categoriesToInsert).
-        select();
+      from('categories').
+      insert(categoriesToInsert).
+      select();
 
       if (!catError && createdCats) {
         for (const cat of createdCats) {
@@ -678,9 +697,9 @@ export default function Settings() {
 
     // Check which rules already exist
     const { data: existingRules } = await supabase.
-      from('income_rules').
-      select('income_name').
-      eq('household_id', household.id);
+    from('income_rules').
+    select('income_name').
+    eq('household_id', household.id);
     const existingNames = new Set((existingRules || []).map((r) => r.income_name.toLowerCase()));
 
     // Build reverse label maps (Hebrew -> English value)
@@ -699,14 +718,14 @@ export default function Settings() {
 
     // Add custom classification options to reverse maps
     for (const opt of classificationOptions) {
-      if (opt.option_type === 'frequency') frequencyReverseMap.set(opt.label.toLowerCase(), opt.value); else
-        if (opt.option_type === 'amount_type') amountTypeReverseMap.set(opt.label.toLowerCase(), opt.value); else
-          if (opt.option_type === 'income_payment_method') paymentMethodReverseMap.set(opt.label.toLowerCase(), opt.value); else
-            if (opt.option_type === 'income_source') sourceReverseMap.set(opt.label.toLowerCase(), opt.value);
+      if (opt.option_type === 'frequency') frequencyReverseMap.set(opt.label.toLowerCase(), opt.value);else
+      if (opt.option_type === 'amount_type') amountTypeReverseMap.set(opt.label.toLowerCase(), opt.value);else
+      if (opt.option_type === 'income_payment_method') paymentMethodReverseMap.set(opt.label.toLowerCase(), opt.value);else
+      if (opt.option_type === 'income_source') sourceReverseMap.set(opt.label.toLowerCase(), opt.value);
     }
 
     // Collect new classifications that need to be created
-    const newClassifications: Array<{ type: string; label: string; }> = [];
+    const newClassifications: Array<{type: string;label: string;}> = [];
 
     for (const rule of rules) {
       if (rule.frequency && !frequencyReverseMap.has(rule.frequency.toLowerCase())) {
@@ -808,13 +827,13 @@ export default function Settings() {
         {/* Tabs */}
         <div data-ev-id="ev_ae8bf9c710" className="flex gap-2 overflow-x-auto pb-2">
           {tabs.map(({ id, label, icon: Icon }) =>
-            <button data-ev-id="ev_51a34b6179"
-              key={id}
-              onClick={() => handleTabChange(id)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${activeTab === id ?
-                'bg-primary text-primary-foreground' :
-                'bg-card text-muted-foreground hover:text-foreground'}`
-              }>
+          <button data-ev-id="ev_51a34b6179"
+          key={id}
+          onClick={() => handleTabChange(id)}
+          className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap transition-colors ${activeTab === id ?
+          'bg-primary text-primary-foreground' :
+          'bg-card text-muted-foreground hover:text-foreground'}`
+          }>
 
               <Icon className="w-4 h-4" />
               {label}
@@ -824,16 +843,16 @@ export default function Settings() {
 
         {/* Categories tab */}
         {activeTab === 'categories' &&
-          <div data-ev-id="ev_5610680fcf" className="flex flex-col gap-6">
+        <div data-ev-id="ev_5610680fcf" className="flex flex-col gap-6">
             {/* Add category */}
             <Card>
               <h3 data-ev-id="ev_850b3a871a" className="font-semibold text-foreground mb-4">הוספת קטגוריה</h3>
               <div data-ev-id="ev_1333f3bea4" className="flex gap-3">
                 <Input
-                  placeholder="שם הקטגוריה"
-                  value={newCategoryName}
-                  onChange={(e) => setNewCategoryName(e.target.value)}
-                  className="flex-1" />
+                placeholder="שם הקטגוריה"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                className="flex-1" />
 
                 <Button onClick={handleAddCategory} disabled={loading}>
                   <Plus className="w-4 h-4" />
@@ -846,50 +865,50 @@ export default function Settings() {
               <h3 data-ev-id="ev_3c0b477552" className="font-semibold text-foreground mb-4">קטגוריות הוצאות</h3>
               <div data-ev-id="ev_811cd3b2d9" className="flex flex-wrap gap-2">
                 {expenseCategories.map((cat) =>
-                  editingCategoryId === cat.id ?
-                    <div data-ev-id="ev_176b454809" key={cat.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              editingCategoryId === cat.id ?
+              <div data-ev-id="ev_176b454809" key={cat.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                       <input data-ev-id="ev_1dbd51422f"
-                        type="text"
-                        value={editingCategoryName}
-                        onChange={(e) => setEditingCategoryName(e.target.value)}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') handleUpdateCategory();
-                          if (e.key === 'Escape') cancelEditingCategory();
-                        }}
-                        className="bg-background border border-border rounded px-2 py-1 text-sm w-32"
-                        autoFocus />
+                type="text"
+                value={editingCategoryName}
+                onChange={(e) => setEditingCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleUpdateCategory();
+                  if (e.key === 'Escape') cancelEditingCategory();
+                }}
+                className="bg-background border border-border rounded px-2 py-1 text-sm w-32"
+                autoFocus />
 
                       <button data-ev-id="ev_53d29f6f5c"
-                        onClick={handleUpdateCategory}
-                        className="text-green-600 hover:text-green-700">
+                onClick={handleUpdateCategory}
+                className="text-green-600 hover:text-green-700">
 
                         <Check className="w-4 h-4" />
                       </button>
                       <button data-ev-id="ev_9f528c7496"
-                        onClick={cancelEditingCategory}
-                        className="text-muted-foreground hover:text-foreground">
+                onClick={cancelEditingCategory}
+                className="text-muted-foreground hover:text-foreground">
 
                         <X className="w-4 h-4" />
                       </button>
                     </div> :
 
-                    <div data-ev-id="ev_ce7b4c0992" key={cat.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_ce7b4c0992" key={cat.id} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                       <span data-ev-id="ev_e9c3f64635" className="text-foreground">{cat.name}</span>
                       <button data-ev-id="ev_de41f73bb1"
-                        onClick={() => startEditingCategory(cat)}
-                        className="text-muted-foreground hover:text-primary">
+                onClick={() => startEditingCategory(cat)}
+                className="text-muted-foreground hover:text-primary">
 
                         <Edit2 className="w-4 h-4" />
                       </button>
                       <button data-ev-id="ev_58e7361ca0"
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="text-muted-foreground hover:text-red-600">
+                onClick={() => handleDeleteCategory(cat.id)}
+                className="text-muted-foreground hover:text-red-600">
 
                         <Trash2 className="w-4 h-4" />
                       </button>
                     </div>
 
-                )}
+              )}
               </div>
             </Card>
 
@@ -899,7 +918,7 @@ export default function Settings() {
 
         {/* Classifications tab */}
         {activeTab === 'classifications' &&
-          <div data-ev-id="ev_825e779f6e" className="flex flex-col gap-6">
+        <div data-ev-id="ev_825e779f6e" className="flex flex-col gap-6">
             <Card>
               <h3 data-ev-id="ev_c1e65a4f95" className="font-semibold text-foreground mb-4">הוספת אפשרות סיווג</h3>
               <p data-ev-id="ev_4d35a45623" className="text-muted-foreground mb-4 text-sm">
@@ -907,29 +926,29 @@ export default function Settings() {
               </p>
               <div data-ev-id="ev_3d154ac963" className="grid grid-cols-1 md:grid-cols-4 gap-3 mb-4">
                 <Select
-                  label="סוג"
-                  value={newOptionType}
-                  onChange={(e) => setNewOptionType(e.target.value)}
-                  options={[
-                    { value: 'frequency', label: 'תדירות' },
-                    { value: 'amount_type', label: 'סוג סכום' },
-                    { value: 'expense_type', label: 'סוג הוצאה' },
-                    { value: 'payment_method', label: 'אמצעי תשלום (הוצאות)' },
-                    { value: 'income_source', label: 'מקור הכנסה' },
-                    { value: 'income_payment_method', label: 'אמצעי תשלום (הכנסות)' }]
-                  } />
+                label="סוג"
+                value={newOptionType}
+                onChange={(e) => setNewOptionType(e.target.value)}
+                options={[
+                { value: 'frequency', label: 'תדירות' },
+                { value: 'amount_type', label: 'סוג סכום' },
+                { value: 'expense_type', label: 'סוג הוצאה' },
+                { value: 'payment_method', label: 'אמצעי תשלום (הוצאות)' },
+                { value: 'income_source', label: 'מקור הכנסה' },
+                { value: 'income_payment_method', label: 'אמצעי תשלום (הכנסות)' }]
+                } />
 
                 <Input
-                  label="מזהה (אנגלית)"
-                  placeholder="למשל: quarterly"
-                  value={newOptionValue}
-                  onChange={(e) => setNewOptionValue(e.target.value)} />
+                label="מזהה (אנגלית)"
+                placeholder="למשל: quarterly"
+                value={newOptionValue}
+                onChange={(e) => setNewOptionValue(e.target.value)} />
 
                 <Input
-                  label="תווית (עברית)"
-                  placeholder="למשל: רבעוני"
-                  value={newOptionLabel}
-                  onChange={(e) => setNewOptionLabel(e.target.value)} />
+                label="תווית (עברית)"
+                placeholder="למשל: רבעוני"
+                value={newOptionLabel}
+                onChange={(e) => setNewOptionLabel(e.target.value)} />
 
                 <div data-ev-id="ev_f059b4c552" className="flex items-end">
                   <Button onClick={handleAddOption} disabled={loading}>
@@ -945,19 +964,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_767d688dc3" className="font-semibold text-foreground mb-4">תדירות תשלום</h3>
               <div data-ev-id="ev_d54253127f" className="flex flex-wrap gap-2">
                 {Object.entries(FREQUENCY_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_cc18a650f4" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_cc18a650f4" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_8ea6b7cf18" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_72b68a7c1b" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'frequency').map((opt) =>
-                  <div data-ev-id="ev_83e46a1c5b" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_83e46a1c5b" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_b5ad63cf07" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_70ab6c4e8c" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
 
@@ -966,19 +985,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_4f2bcf81c5" className="font-semibold text-foreground mb-4">סוג סכום</h3>
               <div data-ev-id="ev_856833b727" className="flex flex-wrap gap-2">
                 {Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_459c638c68" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_459c638c68" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_6a9ec3c0c7" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_6b8566ca18" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'amount_type').map((opt) =>
-                  <div data-ev-id="ev_d403a92ee0" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_d403a92ee0" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_4f69bea837" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_75c9a16b49" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
 
@@ -987,19 +1006,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_3e1565a10e" className="font-semibold text-foreground mb-4">סוג הוצאה</h3>
               <div data-ev-id="ev_1834b59aae" className="flex flex-wrap gap-2">
                 {Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_b0906ebb61" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_b0906ebb61" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_6c6bdd30cf" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_abcfbecf0d" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'expense_type').map((opt) =>
-                  <div data-ev-id="ev_e4084e6cdd" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_e4084e6cdd" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_4aa22e5d18" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_f2b8c6d5e7" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
 
@@ -1008,19 +1027,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_fbd1055074" className="font-semibold text-foreground mb-4">אמצעי תשלום</h3>
               <div data-ev-id="ev_beca713ca1" className="flex flex-wrap gap-2">
                 {Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_78f703f5cd" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_78f703f5cd" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_71849521f1" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_02e07b5d24" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'payment_method').map((opt) =>
-                  <div data-ev-id="ev_706cc8ed94" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_706cc8ed94" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_a586914028" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_3ae538b939" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
 
@@ -1034,19 +1053,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_79e018247f" className="font-semibold text-foreground mb-4">מקור הכנסה</h3>
               <div data-ev-id="ev_037d5f4fdc" className="flex flex-wrap gap-2">
                 {Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_1cb24aa9c7" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_1cb24aa9c7" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_01f96b7588" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_344fcf0c38" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'income_source').map((opt) =>
-                  <div data-ev-id="ev_8838ae06fe" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_8838ae06fe" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_4da39637d9" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_f71bcf3ab2" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
 
@@ -1055,19 +1074,19 @@ export default function Settings() {
               <h3 data-ev-id="ev_0aef15f0b3" className="font-semibold text-foreground mb-4">אמצעי תשלום (הכנסות)</h3>
               <div data-ev-id="ev_c42d6a596c" className="flex flex-wrap gap-2">
                 {Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) =>
-                  <div data-ev-id="ev_d0692700b6" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_d0692700b6" key={value} className="flex items-center gap-2 bg-muted px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_e0b41207a3" className="text-foreground">{label}</span>
                     <span data-ev-id="ev_004484393d" className="text-xs text-muted-foreground">(ברירת מחדל)</span>
                   </div>
-                )}
+              )}
                 {classificationOptions.filter((o) => o.option_type === 'income_payment_method').map((opt) =>
-                  <div data-ev-id="ev_8a0404b07d" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
+              <div data-ev-id="ev_8a0404b07d" key={opt.id} className="flex items-center gap-2 bg-primary/10 px-3 py-2 rounded-lg">
                     <span data-ev-id="ev_55d825db4a" className="text-foreground">{opt.label}</span>
                     <button data-ev-id="ev_3aa9915914" onClick={() => handleDeleteOption(opt.id)} className="text-muted-foreground hover:text-red-600">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
-                )}
+              )}
               </div>
             </Card>
           </div>
@@ -1075,26 +1094,26 @@ export default function Settings() {
 
         {/* Credit cards tab */}
         {activeTab === 'cards' &&
-          <div data-ev-id="ev_68cc8b75ea" className="flex flex-col gap-6">
+        <div data-ev-id="ev_68cc8b75ea" className="flex flex-col gap-6">
             <Card>
               <h3 data-ev-id="ev_c2d3669966" className="font-semibold text-foreground mb-4">הוספת כרטיס</h3>
               <div data-ev-id="ev_cc48e59415" className="flex flex-col gap-3">
                 <div data-ev-id="ev_1d63391ea1" className="grid grid-cols-1 md:grid-cols-3 gap-3">
                   <Input
-                    placeholder="שם הכרטיס"
-                    value={newCardName}
-                    onChange={(e) => setNewCardName(e.target.value)} />
+                  placeholder="שם הכרטיס"
+                  value={newCardName}
+                  onChange={(e) => setNewCardName(e.target.value)} />
 
                   <Input
-                    placeholder="4 ספרות אחרונות"
-                    value={newCardDigits}
-                    onChange={(e) => setNewCardDigits(e.target.value)}
-                    maxLength={4} />
+                  placeholder="4 ספרות אחרונות"
+                  value={newCardDigits}
+                  onChange={(e) => setNewCardDigits(e.target.value)}
+                  maxLength={4} />
 
                   <Input
-                    placeholder="חברה (ישראכרט, כאל...)"
-                    value={newCardProvider}
-                    onChange={(e) => setNewCardProvider(e.target.value)} />
+                  placeholder="חברה (ישראכרט, כאל...)"
+                  value={newCardProvider}
+                  onChange={(e) => setNewCardProvider(e.target.value)} />
 
                 </div>
                 <Button onClick={handleAddCard} disabled={loading} className="self-start">
@@ -1107,13 +1126,13 @@ export default function Settings() {
             <Card>
               <h3 data-ev-id="ev_29df6588aa" className="font-semibold text-foreground mb-4">כרטיסים</h3>
               {creditCards.length === 0 ?
-                <p data-ev-id="ev_f41a6eacfb" className="text-muted-foreground">אין כרטיסים</p> :
+            <p data-ev-id="ev_f41a6eacfb" className="text-muted-foreground">אין כרטיסים</p> :
 
-                <div data-ev-id="ev_8bd4e56461" className="flex flex-col gap-2">
+            <div data-ev-id="ev_8bd4e56461" className="flex flex-col gap-2">
                   {creditCards.map((card) =>
-                    <div data-ev-id="ev_d74d1a036a"
-                      key={card.id}
-                      className="flex items-center justify-between bg-muted px-4 py-3 rounded-lg">
+              <div data-ev-id="ev_d74d1a036a"
+              key={card.id}
+              className="flex items-center justify-between bg-muted px-4 py-3 rounded-lg">
 
                       <div data-ev-id="ev_f6fecff566">
                         <p data-ev-id="ev_c651f08fcb" className="font-medium text-foreground">{card.name}</p>
@@ -1122,22 +1141,22 @@ export default function Settings() {
                         </p>
                       </div>
                       <button data-ev-id="ev_56372994b3"
-                        onClick={() => handleDeleteCard(card.id)}
-                        className="text-muted-foreground hover:text-red-600">
+                onClick={() => handleDeleteCard(card.id)}
+                className="text-muted-foreground hover:text-red-600">
 
                         <Trash2 className="w-5 h-5" />
                       </button>
                     </div>
-                  )}
+              )}
                 </div>
-              }
+            }
             </Card>
           </div>
         }
 
         {/* Defaults tab */}
         {activeTab === 'defaults' &&
-          <div data-ev-id="ev_ba2f70df64" className="flex flex-col gap-6">
+        <div data-ev-id="ev_ba2f70df64" className="flex flex-col gap-6">
             <Card>
               <h3 data-ev-id="ev_8b947cf9d8" className="font-semibold text-foreground mb-4">
                 ברירות מחדל להוצאות חדשות
@@ -1148,62 +1167,62 @@ export default function Settings() {
 
               <div data-ev-id="ev_1415b99817" className="flex flex-col gap-4">
                 <Select
-                  label="קטגוריה"
-                  value={defaultCategoryId}
-                  onChange={(e) => setDefaultCategoryId(e.target.value)}
-                  options={[
-                    { value: '', label: 'ללא קטגוריה' },
-                    ...expenseCategories.map((c) => ({ value: c.id, label: c.name }))]
-                  } />
+                label="קטגוריה"
+                value={defaultCategoryId}
+                onChange={(e) => setDefaultCategoryId(e.target.value)}
+                options={[
+                { value: '', label: 'ללא קטגוריה' },
+                ...expenseCategories.map((c) => ({ value: c.id, label: c.name }))]
+                } />
 
 
                 <Select
-                  label="תדירות"
-                  value={defaultFrequency}
-                  onChange={(e) => setDefaultFrequency(e.target.value as Frequency)}
-                  options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="תדירות"
+                value={defaultFrequency}
+                onChange={(e) => setDefaultFrequency(e.target.value as Frequency)}
+                options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="סוג סכום"
-                  value={defaultAmountType}
-                  onChange={(e) => setDefaultAmountType(e.target.value as AmountType)}
-                  options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="סוג סכום"
+                value={defaultAmountType}
+                onChange={(e) => setDefaultAmountType(e.target.value as AmountType)}
+                options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="סוג הוצאה"
-                  value={defaultExpenseType}
-                  onChange={(e) => setDefaultExpenseType(e.target.value as ExpenseType)}
-                  options={Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="סוג הוצאה"
+                value={defaultExpenseType}
+                onChange={(e) => setDefaultExpenseType(e.target.value as ExpenseType)}
+                options={Object.entries(EXPENSE_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="אמצעי תשלום"
-                  value={defaultPaymentMethod}
-                  onChange={(e) => setDefaultPaymentMethod(e.target.value as PaymentMethod)}
-                  options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="אמצעי תשלום"
+                value={defaultPaymentMethod}
+                onChange={(e) => setDefaultPaymentMethod(e.target.value as PaymentMethod)}
+                options={Object.entries(PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
                 <Select
-                  label="כרטיס אשראי"
-                  value={defaultCreditCardId}
-                  onChange={(e) => setDefaultCreditCardId(e.target.value)}
-                  options={[
-                    { value: '', label: 'לא נבחר' },
-                    ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
-                  } />
+                label="כרטיס אשראי"
+                value={defaultCreditCardId}
+                onChange={(e) => setDefaultCreditCardId(e.target.value)}
+                options={[
+                { value: '', label: 'לא נבחר' },
+                ...creditCards.map((c) => ({ value: c.id, label: `${c.name}${c.last_four_digits ? ` (${c.last_four_digits})` : ''}` }))]
+                } />
 
                 <Button onClick={handleSaveDefaults} disabled={loading} className="self-start mt-2">
                   שמור ברירות מחדל
@@ -1222,43 +1241,43 @@ export default function Settings() {
 
               <div data-ev-id="ev_ef9c0d20e6" className="flex flex-col gap-4">
                 <Select
-                  label="מקור"
-                  value={defaultIncomeSource}
-                  onChange={(e) => setDefaultIncomeSource(e.target.value as IncomeSource)}
-                  options={Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="מקור"
+                value={defaultIncomeSource}
+                onChange={(e) => setDefaultIncomeSource(e.target.value as IncomeSource)}
+                options={Object.entries(INCOME_SOURCE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="תדירות"
-                  value={defaultIncomeFrequency}
-                  onChange={(e) => setDefaultIncomeFrequency(e.target.value as Frequency)}
-                  options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="תדירות"
+                value={defaultIncomeFrequency}
+                onChange={(e) => setDefaultIncomeFrequency(e.target.value as Frequency)}
+                options={Object.entries(FREQUENCY_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="סוג סכום"
-                  value={defaultIncomeAmountType}
-                  onChange={(e) => setDefaultIncomeAmountType(e.target.value as AmountType)}
-                  options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="סוג סכום"
+                value={defaultIncomeAmountType}
+                onChange={(e) => setDefaultIncomeAmountType(e.target.value as AmountType)}
+                options={Object.entries(AMOUNT_TYPE_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Select
-                  label="אמצעי תשלום"
-                  value={defaultIncomePaymentMethod}
-                  onChange={(e) => setDefaultIncomePaymentMethod(e.target.value as IncomePaymentMethod)}
-                  options={Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({
-                    value,
-                    label
-                  }))} />
+                label="אמצעי תשלום"
+                value={defaultIncomePaymentMethod}
+                onChange={(e) => setDefaultIncomePaymentMethod(e.target.value as IncomePaymentMethod)}
+                options={Object.entries(INCOME_PAYMENT_METHOD_LABELS).map(([value, label]) => ({
+                  value,
+                  label
+                }))} />
 
 
                 <Button onClick={handleSaveIncomeDefaults} disabled={loading} className="self-start mt-2">
@@ -1282,23 +1301,23 @@ export default function Settings() {
                   <h4 data-ev-id="ev_4c608eef96" className="font-medium text-foreground mb-3">שדות הוצאות</h4>
                   <div data-ev-id="ev_8c44bcd238" className="flex flex-wrap gap-2">
                     {EXPENSE_COLUMN_OPTIONS.map((option) => {
-                      const isSelected = expenseColumns.includes(option.key);
-                      const isRequired = 'required' in option ? (option as { required?: boolean; }).required : false;
-                      return (
-                        <button data-ev-id="ev_874fbec044"
-                          key={option.key}
-                          onClick={() => toggleExpenseColumn(option.key)}
-                          disabled={isRequired}
-                          className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                            'bg-primary text-primary-foreground border-primary' :
-                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                    const isSelected = expenseColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as {required?: boolean;}).required : false;
+                    return (
+                      <button data-ev-id="ev_874fbec044"
+                      key={option.key}
+                      onClick={() => toggleExpenseColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
 
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
                           {isRequired && ' (חובה)'}
                         </button>);
 
-                    })}
+                  })}
                   </div>
                 </div>
 
@@ -1307,23 +1326,23 @@ export default function Settings() {
                   <h4 data-ev-id="ev_1ab439936b" className="font-medium text-foreground mb-3">שדות הכנסות</h4>
                   <div data-ev-id="ev_5a75868e2b" className="flex flex-wrap gap-2">
                     {INCOME_COLUMN_OPTIONS.map((option) => {
-                      const isSelected = incomeColumns.includes(option.key);
-                      const isRequired = 'required' in option ? (option as { required?: boolean; }).required : false;
-                      return (
-                        <button data-ev-id="ev_035ecd9e86"
-                          key={option.key}
-                          onClick={() => toggleIncomeColumn(option.key)}
-                          disabled={isRequired}
-                          className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                            'bg-primary text-primary-foreground border-primary' :
-                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                    const isSelected = incomeColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as {required?: boolean;}).required : false;
+                    return (
+                      <button data-ev-id="ev_035ecd9e86"
+                      key={option.key}
+                      onClick={() => toggleIncomeColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
 
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
                           {isRequired && ' (חובה)'}
                         </button>);
 
-                    })}
+                  })}
                   </div>
                 </div>
 
@@ -1332,22 +1351,46 @@ export default function Settings() {
                   <h4 data-ev-id="ev_82666e61a9" className="font-medium text-foreground mb-3">שדות כללי הוצאות</h4>
                   <div data-ev-id="ev_093c57c9de" className="flex flex-wrap gap-2">
                     {EXPENSE_RULES_COLUMN_OPTIONS.map((option) => {
-                      const isSelected = expenseRulesColumns.includes(option.key);
-                      const isRequired = 'required' in option ? (option as { required?: boolean; }).required : false;
-                      return (
-                        <button data-ev-id="ev_3d0990dca4"
-                          key={option.key}
-                          onClick={() => toggleExpenseRulesColumn(option.key)}
-                          disabled={isRequired}
-                          className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
-                            'bg-primary text-primary-foreground border-primary' :
-                            'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                    const isSelected = expenseRulesColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as {required?: boolean;}).required : false;
+                    return (
+                      <button data-ev-id="ev_3d0990dca4"
+                      key={option.key}
+                      onClick={() => toggleExpenseRulesColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
                           {isSelected && <Check className="w-3 h-3 inline mr-1" />}
                           {option.label}
                           {isRequired && ' (חובה)'}
                         </button>);
 
-                    })}
+                  })}
+                  </div>
+                </div>
+
+                {/* Income rules columns */}
+                <div data-ev-id="ev_1bdadf275c">
+                  <h4 data-ev-id="ev_68edac54f3" className="font-medium text-foreground mb-3">שדות כללי הכנסות</h4>
+                  <div data-ev-id="ev_7143f807f6" className="flex flex-wrap gap-2">
+                    {INCOME_RULES_COLUMN_OPTIONS.map((option) => {
+                    const isSelected = incomeRulesColumns.includes(option.key);
+                    const isRequired = 'required' in option ? (option as {required?: boolean;}).required : false;
+                    return (
+                      <button data-ev-id="ev_f8b871706d"
+                      key={option.key}
+                      onClick={() => toggleIncomeRulesColumn(option.key)}
+                      disabled={isRequired}
+                      className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${isSelected ?
+                      'bg-primary text-primary-foreground border-primary' :
+                      'bg-background text-muted-foreground border-border hover:border-primary'} ${isRequired ? 'opacity-75 cursor-not-allowed' : ''}`}>
+                          {isSelected && <Check className="w-3 h-3 inline mr-1" />}
+                          {option.label}
+                          {isRequired && ' (חובה)'}
+                        </button>);
+
+                  })}
                   </div>
                 </div>
 
@@ -1361,7 +1404,7 @@ export default function Settings() {
 
         {/* Import rules tab */}
         {activeTab === 'import' &&
-          <div data-ev-id="ev_dadaef6db2" className="flex flex-col gap-6">
+        <div data-ev-id="ev_dadaef6db2" className="flex flex-col gap-6">
             {/* Expense rules import */}
             <Card>
               <h3 data-ev-id="ev_707ba210af" className="font-semibold text-foreground mb-4">ייבוא כללי הוצאות</h3>
@@ -1373,11 +1416,11 @@ export default function Settings() {
               </ul>
 
               <input data-ev-id="ev_ccc5b88e23"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={(e) => handleImportRulesFile(e, 'expense')}
-                className="hidden"
-                id="expense-rules-file" />
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => handleImportRulesFile(e, 'expense')}
+            className="hidden"
+            id="expense-rules-file" />
 
               <label data-ev-id="ev_a3fc729277" htmlFor="expense-rules-file" className={`inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Upload className="w-4 h-4" />
@@ -1396,11 +1439,11 @@ export default function Settings() {
               </ul>
 
               <input data-ev-id="ev_08af8435b6"
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                onChange={(e) => handleImportRulesFile(e, 'income')}
-                className="hidden"
-                id="income-rules-file" />
+            type="file"
+            accept=".xlsx,.xls,.csv"
+            onChange={(e) => handleImportRulesFile(e, 'income')}
+            className="hidden"
+            id="income-rules-file" />
 
               <label data-ev-id="ev_99f88ce73b" htmlFor="income-rules-file" className={`inline-flex items-center justify-center font-medium rounded-lg transition-colors px-4 py-2 text-base gap-2 bg-primary text-primary-foreground hover:bg-primary/90 cursor-pointer ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}>
                 <Upload className="w-4 h-4" />
@@ -1412,15 +1455,15 @@ export default function Settings() {
         }
 
         {activeTab === 'import-expenses' &&
-          <ImportExpensesForm />
+        <ImportExpensesForm />
         }
 
         {activeTab === 'import-incomes' &&
-          <ImportIncomesForm />
+        <ImportIncomesForm />
         }
         {/* Import Preview Modal */}
         {importPreviewOpen &&
-          <div data-ev-id="ev_172d6c96ab" className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cancelImportPreview}>
+        <div data-ev-id="ev_172d6c96ab" className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={cancelImportPreview}>
             <div data-ev-id="ev_c597cdb88f" className="bg-background rounded-xl shadow-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
               <div data-ev-id="ev_7b97835e53" className="p-6">
                 <h3 data-ev-id="ev_2a69b07685" className="text-lg font-semibold text-foreground mb-4">
@@ -1432,96 +1475,96 @@ export default function Settings() {
                   <h4 data-ev-id="ev_a2a494ca3e" className="font-medium text-foreground mb-3">מיפוי עמודות</h4>
                   <div data-ev-id="ev_ed53c0826b" className="grid grid-cols-2 gap-3">
                     {importRulesType === 'expense' ?
-                      <>
+                  <>
                         <Select
-                          label="שם הוצאה (חובה)"
-                          value={importMapping.expense_name || ''}
-                          onChange={(e) => handleMappingChange('expense_name', e.target.value)}
-                          options={[{ value: '', label: 'בחר עמודה...' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="שם הוצאה (חובה)"
+                      value={importMapping.expense_name || ''}
+                      onChange={(e) => handleMappingChange('expense_name', e.target.value)}
+                      options={[{ value: '', label: 'בחר עמודה...' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="קטגוריה"
-                          value={importMapping.category_name || ''}
-                          onChange={(e) => handleMappingChange('category_name', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="קטגוריה"
+                      value={importMapping.category_name || ''}
+                      onChange={(e) => handleMappingChange('category_name', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="תדירות"
-                          value={importMapping.frequency || ''}
-                          onChange={(e) => handleMappingChange('frequency', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="תדירות"
+                      value={importMapping.frequency || ''}
+                      onChange={(e) => handleMappingChange('frequency', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="סוג סכום"
-                          value={importMapping.amount_type || ''}
-                          onChange={(e) => handleMappingChange('amount_type', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="סוג סכום"
+                      value={importMapping.amount_type || ''}
+                      onChange={(e) => handleMappingChange('amount_type', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="סוג הוצאה"
-                          value={importMapping.expense_type || ''}
-                          onChange={(e) => handleMappingChange('expense_type', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="סוג הוצאה"
+                      value={importMapping.expense_type || ''}
+                      onChange={(e) => handleMappingChange('expense_type', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="אמצעי תשלום"
-                          value={importMapping.payment_method || ''}
-                          onChange={(e) => handleMappingChange('payment_method', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="אמצעי תשלום"
+                      value={importMapping.payment_method || ''}
+                      onChange={(e) => handleMappingChange('payment_method', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="כרטיס אשראי"
-                          value={importMapping.credit_card || ''}
-                          onChange={(e) => handleMappingChange('credit_card', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="כרטיס אשראי"
+                      value={importMapping.credit_card || ''}
+                      onChange={(e) => handleMappingChange('credit_card', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="הערות"
-                          value={importMapping.notes || ''}
-                          onChange={(e) => handleMappingChange('notes', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="הערות"
+                      value={importMapping.notes || ''}
+                      onChange={(e) => handleMappingChange('notes', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                       </> :
 
-                      <>
+                  <>
                         <Select
-                          label="שם הכנסה (חובה)"
-                          value={importMapping.income_name || ''}
-                          onChange={(e) => handleMappingChange('income_name', e.target.value)}
-                          options={[{ value: '', label: 'בחר עמודה...' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="שם הכנסה (חובה)"
+                      value={importMapping.income_name || ''}
+                      onChange={(e) => handleMappingChange('income_name', e.target.value)}
+                      options={[{ value: '', label: 'בחר עמודה...' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="תדירות"
-                          value={importMapping.frequency || ''}
-                          onChange={(e) => handleMappingChange('frequency', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="תדירות"
+                      value={importMapping.frequency || ''}
+                      onChange={(e) => handleMappingChange('frequency', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="סוג סכום"
-                          value={importMapping.amount_type || ''}
-                          onChange={(e) => handleMappingChange('amount_type', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="סוג סכום"
+                      value={importMapping.amount_type || ''}
+                      onChange={(e) => handleMappingChange('amount_type', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="אמצעי תשלום"
-                          value={importMapping.payment_method || ''}
-                          onChange={(e) => handleMappingChange('payment_method', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="אמצעי תשלום"
+                      value={importMapping.payment_method || ''}
+                      onChange={(e) => handleMappingChange('payment_method', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="מקור"
-                          value={importMapping.source || ''}
-                          onChange={(e) => handleMappingChange('source', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="מקור"
+                      value={importMapping.source || ''}
+                      onChange={(e) => handleMappingChange('source', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                         <Select
-                          label="הערות"
-                          value={importMapping.notes || ''}
-                          onChange={(e) => handleMappingChange('notes', e.target.value)}
-                          options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
+                      label="הערות"
+                      value={importMapping.notes || ''}
+                      onChange={(e) => handleMappingChange('notes', e.target.value)}
+                      options={[{ value: '', label: 'ללא מיפוי' }, ...importColumns.map((c) => ({ value: c, label: c }))]} />
 
                       </>
-                    }
+                  }
                   </div>
                 </div>
 
@@ -1549,22 +1592,22 @@ export default function Settings() {
                     </thead>
                     <tbody data-ev-id="ev_29315309a3">
                       {importRulesType === 'expense' ?
-                        importExpenseRules.slice(0, 5).map((rule, i) =>
-                          <tr data-ev-id="ev_7cfe6d8baf" key={i} className="border-b border-border last:border-b-0">
+                    importExpenseRules.slice(0, 5).map((rule, i) =>
+                    <tr data-ev-id="ev_7cfe6d8baf" key={i} className="border-b border-border last:border-b-0">
                             <td data-ev-id="ev_4c8fb329fb" className="px-3 py-2">{rule.expense_name}</td>
                             <td data-ev-id="ev_96fefc751c" className="px-3 py-2">{rule.category_name || '-'}</td>
                             <td data-ev-id="ev_7886c013d5" className="px-3 py-2">{rule.frequency || '-'}</td>
                           </tr>
-                        ) :
+                    ) :
 
-                        importIncomeRules.slice(0, 5).map((rule, i) =>
-                          <tr data-ev-id="ev_96f18db121" key={i} className="border-b border-border last:border-b-0">
+                    importIncomeRules.slice(0, 5).map((rule, i) =>
+                    <tr data-ev-id="ev_96f18db121" key={i} className="border-b border-border last:border-b-0">
                             <td data-ev-id="ev_478bc9c867" className="px-3 py-2">{rule.income_name}</td>
                             <td data-ev-id="ev_717e75eaa6" className="px-3 py-2">{rule.frequency || '-'}</td>
                             <td data-ev-id="ev_fa210be461" className="px-3 py-2">{rule.source || '-'}</td>
                           </tr>
-                        )
-                      }
+                    )
+                    }
                     </tbody>
                   </table>
                 </div>
@@ -1575,8 +1618,8 @@ export default function Settings() {
                     ביטול
                   </Button>
                   <Button
-                    onClick={handleConfirmImport}
-                    disabled={loading || (importRulesType === 'expense' ? importExpenseRules.length === 0 : importIncomeRules.length === 0)}>
+                  onClick={handleConfirmImport}
+                  disabled={loading || (importRulesType === 'expense' ? importExpenseRules.length === 0 : importIncomeRules.length === 0)}>
 
                     {loading ? 'מייבא...' : `ייבא ${importRulesType === 'expense' ? importExpenseRules.length : importIncomeRules.length} כללים`}
                   </Button>
@@ -1588,7 +1631,7 @@ export default function Settings() {
 
         {/* Household tab */}
         {activeTab === 'household' && household &&
-          <div data-ev-id="ev_d38d48ccf8" className="flex flex-col gap-6">
+        <div data-ev-id="ev_d38d48ccf8" className="flex flex-col gap-6">
             <Card>
               <h3 data-ev-id="ev_00bb6b49cb" className="font-semibold text-foreground mb-4">פרטי הבית</h3>
               <div data-ev-id="ev_7f9336a409" className="flex flex-col gap-4">
@@ -1620,9 +1663,9 @@ export default function Settings() {
                 לחץ כאן כדי להתנתק מהמערכת
               </p>
               <Button
-                variant="outline"
-                className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
-                onClick={signOut}>
+              variant="outline"
+              className="border-destructive text-destructive hover:bg-destructive hover:text-destructive-foreground"
+              onClick={signOut}>
 
                 <LogOut className="w-4 h-4 ml-2" />
                 יציאה

@@ -82,6 +82,8 @@ export function HouseholdProvider({ children }: { children: ReactNode }) {
           household_id: rawDisplaySettings.household_id,
           expense_columns: Array.isArray(rawDisplaySettings.expense_columns) ? rawDisplaySettings.expense_columns : JSON.parse(rawDisplaySettings.expense_columns as string),
           income_columns: Array.isArray(rawDisplaySettings.income_columns) ? rawDisplaySettings.income_columns : JSON.parse(rawDisplaySettings.income_columns as string),
+          expense_rules_columns: rawDisplaySettings.expense_rules_columns ?? ['expense_name', 'category', 'frequency', 'expense_type', 'payment_method', 'credit_card', 'amount_type', 'notes'],
+          income_rules_columns: rawDisplaySettings.income_rules_columns ?? ['income_name', 'source', 'frequency', 'payment_method', 'amount_type'],
         } as DisplaySettings);
       } else {
         setDisplaySettings(null);

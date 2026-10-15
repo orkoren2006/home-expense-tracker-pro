@@ -17,7 +17,7 @@ import {
 '@/types';
 
 export default function IncomeRules() {
-  const { household, classificationOptions, refreshData } = useHousehold();
+  const { household, classificationOptions, displaySettings, refreshData } = useHousehold();
   const [rules, setRules] = useState<IncomeRule[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -31,8 +31,11 @@ export default function IncomeRules() {
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
 
   // Sorting
-  const [sortField, setSortField] = useState<'income_name' | 'source' | 'frequency'>('income_name');
+  const [sortField, setSortField] = useState<'income_name' | 'source' | 'frequency' | 'payment_method' | 'amount_type' | 'created_at'>('income_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+
+  // Column visibility from display settings
+  const visibleColumns = displaySettings?.income_rules_columns || ['income_name', 'source', 'frequency', 'payment_method', 'amount_type'];
 
   // Bulk selection
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -125,17 +128,30 @@ export default function IncomeRules() {
         case 'frequency':
           cmp = (frequencyLabels[a.frequency] || a.frequency).localeCompare(frequencyLabels[b.frequency] || b.frequency, 'he');
           break;
+        case 'payment_method':
+          cmp = (paymentMethodLabels[a.payment_method] || a.payment_method).localeCompare(paymentMethodLabels[b.payment_method] || b.payment_method, 'he');
+          break;
+        case 'amount_type':
+          cmp = (amountTypeLabels[a.amount_type] || a.amount_type).localeCompare(amountTypeLabels[b.amount_type] || b.amount_type, 'he');
+          break;
+        case 'created_at': {
+          // Sort by full timestamp, newest first on first click
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+        }
       }
       return sortDirection === 'asc' ? cmp : -cmp;
     });
-  }, [rules, searchTerm, filterFrequency, filterSource, filterPaymentMethod, sortField, sortDirection, sourceLabels, frequencyLabels]);
+  }, [rules, searchTerm, filterFrequency, filterSource, filterPaymentMethod, sortField, sortDirection, sourceLabels, frequencyLabels, paymentMethodLabels, amountTypeLabels]);
 
   const toggleSort = (field: typeof sortField) => {
     if (sortField === field) {
       setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      // For created_at, first click should be desc (newest first)
+      setSortDirection(field === 'created_at' ? 'desc' : 'asc');
     }
   };
 
@@ -528,8 +544,9 @@ export default function IncomeRules() {
                     }
                     </button>
                   </th>
-                  <th data-ev-id="ev_b447b84d8d" className="p-3 text-right">
-                    <button data-ev-id="ev_6b56c3b949"
+                  {visibleColumns.includes('income_name') &&
+                <th data-ev-id="ev_5b941fef94" className="p-3 text-right">
+                    <button data-ev-id="ev_900834d897"
                   className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
                   onClick={() => toggleSort('income_name')}>
 
@@ -537,8 +554,10 @@ export default function IncomeRules() {
                       <SortIcon field="income_name" />
                     </button>
                   </th>
-                  <th data-ev-id="ev_bbfc3047ff" className="p-3 text-right">
-                    <button data-ev-id="ev_bc29005211"
+                }
+                  {visibleColumns.includes('source') &&
+                <th data-ev-id="ev_8fdb3f5b52" className="p-3 text-right">
+                    <button data-ev-id="ev_568946dd26"
                   className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
                   onClick={() => toggleSort('source')}>
 
@@ -546,8 +565,10 @@ export default function IncomeRules() {
                       <SortIcon field="source" />
                     </button>
                   </th>
-                  <th data-ev-id="ev_1e8b5aed68" className="p-3 text-right">
-                    <button data-ev-id="ev_0a57aae7d7"
+                }
+                  {visibleColumns.includes('frequency') &&
+                <th data-ev-id="ev_dfff59841c" className="p-3 text-right">
+                    <button data-ev-id="ev_1a596cab0a"
                   className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
                   onClick={() => toggleSort('frequency')}>
 
@@ -555,9 +576,41 @@ export default function IncomeRules() {
                       <SortIcon field="frequency" />
                     </button>
                   </th>
-                  <th data-ev-id="ev_8fdb3f5b52" className="p-3 text-right font-semibold text-foreground hidden md:table-cell">אמצעי תשלום</th>
-                  <th data-ev-id="ev_ce1201019f" className="p-3 text-right font-semibold text-foreground hidden lg:table-cell">סוג סכום</th>
-                  <th data-ev-id="ev_8fdb3f5b52" className="p-3 text-right font-semibold text-foreground">פעולות</th>
+                }
+                  {visibleColumns.includes('payment_method') &&
+                <th data-ev-id="ev_9066e6a3b6" className="p-3 text-right">
+                    <button data-ev-id="ev_1db7f88a8b"
+                  className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
+                  onClick={() => toggleSort('payment_method')}>
+
+                      אמצעי תשלום
+                      <SortIcon field="payment_method" />
+                    </button>
+                  </th>
+                }
+                  {visibleColumns.includes('amount_type') &&
+                <th data-ev-id="ev_6fb03c587b" className="p-3 text-right">
+                    <button data-ev-id="ev_4fddb1dfc2"
+                  className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
+                  onClick={() => toggleSort('amount_type')}>
+
+                      סוג סכום
+                      <SortIcon field="amount_type" />
+                    </button>
+                  </th>
+                }
+                  {visibleColumns.includes('created_at') &&
+                <th data-ev-id="ev_cc43d5c7fa" className="p-3 text-right">
+                    <button data-ev-id="ev_fcf35ffd3c"
+                  className="flex items-center gap-1 font-semibold text-foreground hover:text-primary"
+                  onClick={() => toggleSort('created_at')}>
+
+                      תאריך יצירה
+                      <SortIcon field="created_at" />
+                    </button>
+                  </th>
+                }
+                  <th data-ev-id="ev_bf7c865f04" className="p-3 text-right font-semibold text-foreground">פעולות</th>
                 </tr>
               </thead>
               <tbody data-ev-id="ev_9bbb18bc18">
@@ -583,7 +636,8 @@ export default function IncomeRules() {
                     }
                       </button>
                     </td>
-                    <td data-ev-id="ev_b98bcbf29f" className="p-3">
+                    {visibleColumns.includes('income_name') &&
+                <td data-ev-id="ev_14b75f66b8" className="p-3">
                       {editingRule?.id === rule.id ?
                   <Input
                     value={editingRule.income_name}
@@ -593,10 +647,12 @@ export default function IncomeRules() {
                     className="min-w-[150px]" /> :
 
 
-                  <span data-ev-id="ev_75696ff7a4" className="text-foreground">{rule.income_name}</span>
+                  <span data-ev-id="ev_9e89942726" className="text-foreground">{rule.income_name}</span>
                   }
                     </td>
-                    <td data-ev-id="ev_c7f627c72b" className="p-3">
+                }
+                    {visibleColumns.includes('source') &&
+                <td data-ev-id="ev_2252513940" className="p-3">
                       {editingRule?.id === rule.id ?
                   <Select
                     value={editingRule.source}
@@ -606,12 +662,14 @@ export default function IncomeRules() {
                     options={Object.entries(sourceLabels).map(([value, label]) => ({ value, label }))} /> :
 
 
-                  <span data-ev-id="ev_6d63482866" className="text-muted-foreground">
+                  <span data-ev-id="ev_82606b6adf" className="text-muted-foreground">
                           {sourceLabels[rule.source] || rule.source}
                         </span>
                   }
                     </td>
-                    <td data-ev-id="ev_24d2aa9f9b" className="p-3">
+                }
+                    {visibleColumns.includes('frequency') &&
+                <td data-ev-id="ev_ac59c6158a" className="p-3">
                       {editingRule?.id === rule.id ?
                   <Select
                     value={editingRule.frequency}
@@ -621,12 +679,14 @@ export default function IncomeRules() {
                     options={Object.entries(frequencyLabels).map(([value, label]) => ({ value, label }))} /> :
 
 
-                  <span data-ev-id="ev_b19ec2781d" className="text-muted-foreground">
+                  <span data-ev-id="ev_1572cc0b54" className="text-muted-foreground">
                           {frequencyLabels[rule.frequency] || rule.frequency}
                         </span>
                   }
                     </td>
-                    <td data-ev-id="ev_bfc071d498" className="p-3 hidden md:table-cell">
+                }
+                    {visibleColumns.includes('payment_method') &&
+                <td data-ev-id="ev_e8fde93167" className="p-3">
                       {editingRule?.id === rule.id ?
                   <Select
                     value={editingRule.payment_method}
@@ -636,12 +696,14 @@ export default function IncomeRules() {
                     options={Object.entries(paymentMethodLabels).map(([value, label]) => ({ value, label }))} /> :
 
 
-                  <span data-ev-id="ev_f96088bf45" className="text-muted-foreground">
+                  <span data-ev-id="ev_ab9d938b2a" className="text-muted-foreground">
                           {paymentMethodLabels[rule.payment_method] || rule.payment_method}
                         </span>
                   }
                     </td>
-                    <td data-ev-id="ev_5fc69d0dd5" className="p-3 hidden lg:table-cell">
+                }
+                    {visibleColumns.includes('amount_type') &&
+                <td data-ev-id="ev_39f1abf019" className="p-3">
                       {editingRule?.id === rule.id ?
                   <Select
                     value={editingRule.amount_type}
@@ -651,11 +713,17 @@ export default function IncomeRules() {
                     options={Object.entries(amountTypeLabels).map(([value, label]) => ({ value, label }))} /> :
 
 
-                  <span data-ev-id="ev_04f1671ee6" className="text-muted-foreground">
+                  <span data-ev-id="ev_feba3860a0" className="text-muted-foreground">
                           {amountTypeLabels[rule.amount_type] || rule.amount_type}
                         </span>
                   }
                     </td>
+                }
+                    {visibleColumns.includes('created_at') &&
+                <td data-ev-id="ev_4906208e48" className="p-3 text-muted-foreground text-sm">
+                      {rule.created_at ? new Date(rule.created_at).toLocaleDateString('he-IL') : '-'}
+                    </td>
+                }
                     <td data-ev-id="ev_bcde58e63c" className="p-3">
                       <div data-ev-id="ev_232913c458" className="flex gap-2 justify-end">
                         {editingRule?.id === rule.id ?

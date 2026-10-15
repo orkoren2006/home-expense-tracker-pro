@@ -80,6 +80,7 @@ export interface DisplaySettings {
   expense_columns: string[];
   income_columns: string[];
   expense_rules_columns: string[];
+  income_rules_columns: string[];
 }
 
 // Available column options for expenses and incomes
@@ -116,6 +117,16 @@ export const EXPENSE_RULES_COLUMN_OPTIONS = [
   { key: 'payment_method', label: 'אמצעי תשלום' },
   { key: 'credit_card', label: 'כרטיס אשראי' },
   { key: 'notes', label: 'הערות' },
+  { key: 'created_at', label: 'תאריך יצירה' },
+] as const;
+
+export const INCOME_RULES_COLUMN_OPTIONS = [
+  { key: 'income_name', label: 'שם', required: true },
+  { key: 'source', label: 'מקור' },
+  { key: 'frequency', label: 'תדירות' },
+  { key: 'payment_method', label: 'אמצעי תשלום' },
+  { key: 'amount_type', label: 'סוג סכום' },
+  { key: 'created_at', label: 'תאריך יצירה' },
 ] as const;
 
 export interface Household {

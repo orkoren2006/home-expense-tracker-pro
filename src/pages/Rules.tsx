@@ -33,7 +33,7 @@ export default function Rules() {
   const [filterPaymentMethod, setFilterPaymentMethod] = useState('');
 
   // Sorting
-  const [sortField, setSortField] = useState<'expense_name' | 'category' | 'frequency' | 'expense_type'>('expense_name');
+  const [sortField, setSortField] = useState<'expense_name' | 'category' | 'frequency' | 'expense_type' | 'created_at'>('expense_name');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
 
   // Bulk selection
@@ -147,6 +147,13 @@ export default function Rules() {
           aVal = expenseTypeLabels[a.expense_type] || a.expense_type;
           bVal = expenseTypeLabels[b.expense_type] || b.expense_type;
           break;
+        case 'created_at': {
+          // Sort by full timestamp, newest first on first click
+          const aTime = a.created_at ? new Date(a.created_at).getTime() : 0;
+          const bTime = b.created_at ? new Date(b.created_at).getTime() : 0;
+          // For created_at, first click = desc (newest first)
+          return sortDirection === 'asc' ? aTime - bTime : bTime - aTime;
+        }
         default:
           return 0;
       }
@@ -162,7 +169,8 @@ export default function Rules() {
       setSortDirection((d) => d === 'asc' ? 'desc' : 'asc');
     } else {
       setSortField(field);
-      setSortDirection('asc');
+      // For created_at, first click should be desc (newest first)
+      setSortDirection(field === 'created_at' ? 'desc' : 'asc');
     }
   };
 
@@ -698,6 +706,13 @@ export default function Rules() {
                         הערות
                       </th>
                   }
+                    {visibleColumns.includes('created_at') &&
+                  <th data-ev-id="ev_71825f8110" className="text-right p-3 text-sm font-medium text-muted-foreground">
+                        <button data-ev-id="ev_628191a353" onClick={() => handleSort('created_at')} className="flex items-center gap-1 hover:text-foreground">
+                          תאריך יצירה <SortIcon field="created_at" />
+                        </button>
+                      </th>
+                  }
                     <th data-ev-id="ev_946e271d51" className="p-3"></th>
                   </tr>
                 </thead>
@@ -762,6 +777,11 @@ export default function Rules() {
                         {visibleColumns.includes('notes') &&
                       <td data-ev-id="ev_ea0e8176f7" className="p-3 text-muted-foreground text-sm">
                           {rule.notes || '-'}
+                        </td>
+                      }
+                        {visibleColumns.includes('created_at') &&
+                      <td data-ev-id="ev_56ad1fcdb4" className="p-3 text-muted-foreground text-sm">
+                          {rule.created_at ? new Date(rule.created_at).toLocaleDateString('he-IL') : '-'}
                         </td>
                       }
                         <td data-ev-id="ev_b6e5805864" className="p-3">

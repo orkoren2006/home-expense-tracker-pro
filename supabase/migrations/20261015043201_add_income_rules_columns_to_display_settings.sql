@@ -1,0 +1,1 @@
+ALTER TABLE display_settings ADD COLUMN income_rules_columns TEXT[] NOT NULL DEFAULT ARRAY['income_name', 'source', 'frequency', 'payment_method', 'amount_type'];
