@@ -1,5 +1,5 @@
 import { useContext } from 'react';
-import { HouseholdContext, type HouseholdContextType } from '@/contexts/householdContext';
+import { HouseholdContext, type HouseholdContextType } from '@/contexts/householdContextDef';
 
 export function useHousehold(): HouseholdContextType {
   const context = useContext(HouseholdContext);

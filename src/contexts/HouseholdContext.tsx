@@ -2,10 +2,10 @@ import { useEffect, useState, ReactNode } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import type { Household, HouseholdMember, Category, CreditCard, ExpenseRule, IncomeRule, DefaultExpenseSettings, DefaultIncomeSettings, ClassificationOption, DisplaySettings } from '@/types';
-import { HouseholdContext } from '@/contexts/householdContext';
+import { HouseholdContext } from '@/contexts/householdContextDef';
 
-export { HouseholdContext } from '@/contexts/householdContext';
-export type { HouseholdContextType } from '@/contexts/householdContext';
+export { HouseholdContext } from '@/contexts/householdContextDef';
+export type { HouseholdContextType } from '@/contexts/householdContextDef';
 
 export function HouseholdProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
